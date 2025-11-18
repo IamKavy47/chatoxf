@@ -1,5 +1,5 @@
 // ********** CONFIG **********
-const CONVEX_URL = "https://impartial-dachshund-607.convex.cloud";
+const CONVEX_URL = "https://doting-pony-792.convex.cloud";
 const client = new convex.ConvexClient(CONVEX_URL);
 
 // app state
