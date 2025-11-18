@@ -109,7 +109,7 @@ async function onRegister(){
 
     // send OTP to your Gmail backend (wrap in try/catch so UI flow remains predictable)
     try {
-      const res = await fetch("http://localhost:5000/send-otp", {
+      const res = await fetch("https://chatmail-tan.vercel.app/api/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp })
@@ -185,7 +185,7 @@ q("otpResendBtn").onclick = async ()=>{
     });
 
     try {
-      const res = await fetch("http://localhost:5000/send-otp", {
+      const res = await fetch("https://chatmail-tan.vercel.app/api/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: pendingRegistration.email, otp })
