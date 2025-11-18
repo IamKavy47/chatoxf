@@ -3,16 +3,18 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>LiquidGlass Chat</title>
+<title>ChatOXF</title>
 <link rel="stylesheet" href="style.css">
+<!-- GSAP for smooth animations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
   <div class="app">
     <!-- LEFT: register/login/chatlist -->
     <div class="glass-panel left">
       <div class="brand">
-        <div class="logo">LG</div>
-        <div><h1>LiquidGlass Chat</h1></div>
+        <div class="logo">OXF</div>
+        <div><h1>OXF Chat</h1></div>
       </div>
 
       <!-- REGISTER SCREEN -->
@@ -22,7 +24,6 @@
         <div class="field"><label class="small">Username</label><input id="regUser" type="text" placeholder="unique username" /></div>
         <div class="field"><label class="small">Email</label><input id="regEmail" type="email" placeholder="you@example.com" /></div>
         <div class="field"><label class="small">Password</label><input id="regPass" type="password" /></div>
-        <div class="field"><label class="small">Profile picture (optional)</label><input id="regPfp" type="file" accept="image/*" /></div>
         <button class="btn" onclick="onRegister()">Create account</button>
         <div style="margin-top:10px; color:rgba(255,255,255,0.7)">Already registered? <span class="link" onclick="showLogin()">Login</span></div>
       </div>
@@ -39,12 +40,12 @@
       <!-- LIST SCREEN (shown after login) -->
       <div id="screen-list" class="screen" style="display:none; height:100%; gap:8px;">
         <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
-          <div class="avatar-sm" id="meAvatar"><img id="meAvatarImg" src="" alt="" style="display:none"></div>
+          <div class="avatar-sm" id="meAvatar"><img id="meAvatarImg" src="/placeholder.svg" alt="" style="display:none"></div>
           <div style="flex:1">
             <div id="meName" style="font-weight:800"></div>
             <div id="meUser" style="font-size:13px; color:rgba(255,255,255,0.7)"></div>
           </div>
-          <button class="btn" onclick="logout()" style="padding:8px 10px; background:transparent; border:1px solid rgba(255,255,255,0.15); color:var(--text)">Logout</button>
+          <button class="btn" onclick="logout()" style="padding:8px 10px; background:transparent; border:1px solid rgba(255,255,255,0.15); color:var(--text-primary)">Logout</button>
         </div>
 
         <div class="search-row">
@@ -54,7 +55,7 @@
 
         <div id="searchResult" style="display:none; margin-bottom:10px; padding:10px; border-radius:12px; background:rgba(255,255,255,0.08);">
           <div style="display:flex; gap:10px; align-items:center;">
-            <div class="avatar-sm" id="srAvatar"><img id="srAvatarImg" src="" alt="" style="display:none"></div>
+            <div class="avatar-sm" id="srAvatar"><img id="srAvatarImg" src="/placeholder.svg" alt="" style="display:none"></div>
             <div style="flex:1; min-width:0;">
               <div id="srName" style="font-weight:800"></div>
               <div id="srUser" style="font-size:13px; color:rgba(255,255,255,0.7)"></div>
@@ -72,14 +73,10 @@
     <div class="glass-panel chat-panel" id="chatPanel">
       <div class="chat-header" id="chatHeader">
         <div class="back-btn" onclick="closeChat()">←</div>
-        <div class="avatar" id="chatAvatar"><img id="chatAvatarImg" src="" alt="" style="display:none;"></div>
+        <div class="avatar" id="chatAvatar"><img id="chatAvatarImg" src="/placeholder.svg" alt="" style="display:none;"></div>
         <div class="title">
           <div class="name" id="chatName">Select a chat</div>
           <div class="user" id="chatUser">@username</div>
-        </div>
-        <div class="floating">
-          <button class="fab" title="Call" onclick="alert('Call not implemented')">📞</button>
-          <button class="fab" title="Video" onclick="alert('Video not implemented')">📹</button>
         </div>
       </div>
 
@@ -87,7 +84,7 @@
 
       <div class="composer">
         <input id="msgInput" placeholder="Type a message..." />
-        <button class="btn" onclick="onSend()">Send</button>
+        <button class="btn send-btn" onclick="onSend()">Send</button>
       </div>
     </div>
 
@@ -99,7 +96,7 @@
       <h3 style="margin:0 0 12px 0;">Set profile picture</h3>
       <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
         <div class="avatar-xl" id="pfpPreviewWrap">
-          <img id="pfpPreviewImg" src="" style="display:none; width:100%; height:100%; object-fit:cover;" />
+          <img id="pfpPreviewImg" src="/placeholder.svg" style="display:none; width:100%; height:100%; object-fit:cover;" />
         </div>
         <input id="pfpFile" type="file" accept="image/*" />
         <label class="small-muted">Use the zoom slider to adjust how the image fits the circular crop</label>
@@ -124,7 +121,7 @@
 
       <div style="display:flex; gap:14px; align-items:center; margin-bottom:12px;">
         <div class="avatar-xl" id="profileAvatarWrap">
-          <img id="profileAvatarImg" src="" style="display:none; width:100%; height:100%; object-fit:cover;" />
+          <img id="profileAvatarImg" src="/placeholder.svg" style="display:none; width:100%; height:100%; object-fit:cover;" />
         </div>
         <div style="flex:1">
           <div id="profileNameDisplay" style="font-weight:800; font-size:18px;"></div>
@@ -155,7 +152,7 @@
       </div>
 
       <!-- Read-only footer -->
-      <div id="profileReadOnlyAbout" style="margin-top:12px; color:rgba(255,255,255,0.75);"></div>
+      <div id="profileReadOnlyAbout" style="margin-top:12px; color:rgba(241,245,249,0.75);"></div>
     </div>
   </div>
 
@@ -164,28 +161,28 @@
   <div class="modal otp-modal" role="document">
 
     <div style="text-align:center; margin-bottom:16px;">
-      <div style="font-size:28px; font-weight:800; color:#5b6cff;">OmniXForge</div>
+      <div style="font-size:28px; font-weight:800; color:#6366f1;">LiquidGlass</div>
       <div style="opacity:0.8;">Secure Verification</div>
     </div>
 
     <h3 style="text-align:center; margin:0 0 10px 0;">Enter OTP</h3>
-    <p style="text-align:center; color:rgba(255,255,255,0.7); margin-bottom:20px;">
-      We’ve sent a 6-digit code to <span id="otpEmailDisplay" style="font-weight:600;"></span>
+    <p style="text-align:center; color:rgba(241,245,249,0.7); margin-bottom:20px;">
+      We've sent a 6-digit code to <span id="otpEmailDisplay" style="font-weight:600;"></span>
     </p>
 
     <!-- OTP BOXES -->
     <div class="otp-boxes">
-      <input class="otp-input" maxlength="1" />
-      <input class="otp-input" maxlength="1" />
-      <input class="otp-input" maxlength="1" />
-      <input class="otp-input" maxlength="1" />
-      <input class="otp-input" maxlength="1" />
-      <input class="otp-input" maxlength="1" />
+      <input class="otp-input" maxlength="1" inputmode="numeric" />
+      <input class="otp-input" maxlength="1" inputmode="numeric" />
+      <input class="otp-input" maxlength="1" inputmode="numeric" />
+      <input class="otp-input" maxlength="1" inputmode="numeric" />
+      <input class="otp-input" maxlength="1" inputmode="numeric" />
+      <input class="otp-input" maxlength="1" inputmode="numeric" />
     </div>
 
     <!-- Timer + Resend -->
     <div style="text-align:center; margin-top:16px;">
-      <span id="otpTimer" style="color:rgba(255,255,255,0.7);"></span>
+      <span id="otpTimer" style="color:rgba(241,245,249,0.7);"></span>
       <br />
       <button id="otpResendBtn" class="btn-ghost" style="margin-top:6px;" disabled>
         Resend OTP
