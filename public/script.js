@@ -1,5 +1,19 @@
 /* Enhanced with GSAP animations and smooth interactions */
 
+// CONFIG - Moved to top before any usage
+const CONVEX_URL = "https://doting-pony-792.convex.cloud";
+const client = new convex.ConvexClient(CONVEX_URL);
+
+// app state
+let currentUser = null;
+let activeOtherId = null;
+let chatSubStop = null;
+let listSubStop = null;
+const profileCache = {};
+
+// helpers
+function q(id) { return document.getElementById(id); }
+
 // Initialize GSAP animations
 gsap.registerPlugin(CSSRulePlugin);
 
@@ -151,20 +165,6 @@ otpInputs.forEach((input, idx) => {
     otpInputs[lastIdx].focus();
   });
 });
-
-// CONFIG
-const CONVEX_URL = "https://doting-pony-792.convex.cloud";
-const client = new convex.ConvexClient(CONVEX_URL);
-
-// app state
-let currentUser = null;
-let activeOtherId = null;
-let chatSubStop = null;
-let listSubStop = null;
-const profileCache = {};
-
-// helpers
-function q(id) { return document.getElementById(id); }
 
 // ========== IMAGE COMPRESSION ==========
 async function compressImage(file, maxWidth=420, quality=0.72){
