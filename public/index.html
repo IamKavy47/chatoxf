@@ -2,203 +2,264 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>ChatOXF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<!-- GSAP for smooth animations -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
+  
   <div class="app">
-    <!-- LEFT: register/login/chatlist -->
-    <div class="glass-panel left">
-      <div class="brand">
-        <div class="logo">OXF</div>
-        <div><h1>OXF Chat</h1></div>
-      </div>
-
-      <!-- REGISTER SCREEN -->
+    <!-- LEFT PANEL (Login / Dashboard) -->
+    <div class="panel left-panel">
+      
+      <!-- REGISTER SCREEN (Styled as "Explore" screen) -->
       <div id="screen-register" class="screen active">
-        <div style="font-weight:800; font-size:18px; margin-bottom:8px">Create account</div>
-        <div class="field"><label class="small">Full name</label><input id="regName" type="text" placeholder="Your full name" /></div>
-        <div class="field"><label class="small">Username</label><input id="regUser" type="text" placeholder="unique username" /></div>
-        <div class="field"><label class="small">Email</label><input id="regEmail" type="email" placeholder="you@example.com" /></div>
-        <div class="field"><label class="small">Password</label><input id="regPass" type="password" /></div>
-        <button class="btn" onclick="onRegister()">Create account</button>
-        <div style="margin-top:10px; color:rgba(255,255,255,0.7)">Already registered? <span class="link" onclick="showLogin()">Login</span></div>
+        <div class="mindmate-header">
+          <div class="logo-row">
+            <i class="ri-openai-fill"></i> <span>ChatOXF</span>
+          </div>
+          <div class="skip-btn">Skip</div>
+        </div>
+
+        <div class="hero-text">
+          Explore<br>infinite<br><span class="text-accent">capabilities</span><br>of writing
+        </div>
+
+        <div class="feature-cards">
+          <div class="feature-card">
+            <div class="icon-circle"><i class="ri-lightbulb-flash-line"></i></div>
+            <div class="text">Remembers what user said earlier in the conversation</div>
+          </div>
+          <div class="feature-card">
+            <div class="icon-circle"><i class="ri-edit-2-line"></i></div>
+            <div class="text">Allows user to provide follow-up corrections</div>
+          </div>
+        </div>
+
+        <!-- Functional Inputs Hidden in a "Sign Up" modal or inline? 
+             To keep it simple and matching the image, I'll put them in a bottom sheet style container 
+             that mimics the buttons area, or just list them cleanly. 
+             The image shows "Login" and "Sign up" buttons. 
+             I will make the inputs visible but styled minimally above the buttons. -->
+        
+        <div class="auth-form-container">
+           <div class="input-group">
+            <input id="regName" type="text" placeholder="Full Name" class="pill-input" />
+            <input id="regUser" type="text" placeholder="Username" class="pill-input" />
+            <input id="regEmail" type="email" placeholder="Email" class="pill-input" />
+            <input id="regPass" type="password" placeholder="Password" class="pill-input" />
+           </div>
+
+           <div class="action-buttons">
+             <button class="btn pill-btn primary" onclick="onRegister()">Sign up</button>
+             <button class="btn pill-btn secondary" onclick="showLogin()">Login</button>
+           </div>
+        </div>
       </div>
 
       <!-- LOGIN SCREEN -->
       <div id="screen-login" class="screen">
-        <div style="font-weight:800; font-size:18px; margin-bottom:8px">Welcome back</div>
-        <div class="field"><label class="small">Username</label><input id="loginUser" type="text" /></div>
-        <div class="field"><label class="small">Password</label><input id="loginPass" type="password" /></div>
-        <button class="btn" onclick="onLogin()">Login</button>
-        <div style="margin-top:10px; color:rgba(255,255,255,0.7)">New here? <span class="link" onclick="showRegister()">Create account</span></div>
+        <div class="mindmate-header">
+          <div class="logo-row">
+            <i class="ri-openai-fill"></i> <span>Mindmate</span>
+          </div>
+        </div>
+
+        <div class="hero-text">
+          Welcome<br>back
+        </div>
+
+        <div class="auth-form-container">
+           <div class="input-group">
+            <input id="loginUser" type="text" placeholder="Username" class="pill-input" />
+            <input id="loginPass" type="password" placeholder="Password" class="pill-input" />
+           </div>
+
+           <div class="action-buttons">
+             <button class="btn pill-btn primary" onclick="onLogin()">Login</button>
+             <button class="btn pill-btn secondary" onclick="showRegister()">Create account</button>
+           </div>
+        </div>
       </div>
 
-      <!-- LIST SCREEN (shown after login) -->
-      <div id="screen-list" class="screen" style="display:none; height:100%; gap:8px;">
-        <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
-          <div class="avatar-sm" id="meAvatar"><img id="meAvatarImg" src="/placeholder.svg" alt="" style="display:none"></div>
-          <div style="flex:1">
-            <div id="meName" style="font-weight:800"></div>
-            <div id="meUser" style="font-size:13px; color:rgba(255,255,255,0.7)"></div>
+      <!-- LIST SCREEN (Dashboard Style) -->
+      <div id="screen-list" class="screen" style="display:none;">
+        <div class="dashboard-header">
+          <div class="greeting">
+            Good morning,<br><span id="meNameDisplay">User</span>
+            <div id="meUser" class="user-handle" style="margin-top:4px; font-size:14px; color:var(--text-secondary);"></div>
           </div>
-          <button class="btn" onclick="logout()" style="padding:8px 10px; background:transparent; border:1px solid rgba(255,255,255,0.15); color:var(--text-primary)">Logout</button>
+          <div class="avatar-circle" id="meAvatar" style="cursor:pointer;">
+             <img id="meAvatarImg" alt="Profile" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;">
+             <span class="fallback">ME</span>
+          </div>
         </div>
 
-        <div class="search-row">
-          <input id="searchInput" placeholder="Search exact username..." />
-          <button class="btn" onclick="onSearch()">Search</button>
+        <!-- Updated onclick to open the new search panel -->
+        <div class="new-chat-btn" onclick="openSearchPanel()">
+          <span>New Chat</span>
+          <i class="ri-add-line"></i>
         </div>
 
-        <div id="searchResult" style="display:none; margin-bottom:10px; padding:10px; border-radius:12px; background:rgba(255,255,255,0.08);">
-          <div style="display:flex; gap:10px; align-items:center;">
-            <div class="avatar-sm" id="srAvatar"><img id="srAvatarImg" src="/placeholder.svg" alt="" style="display:none"></div>
-            <div style="flex:1; min-width:0;">
-              <div id="srName" style="font-weight:800"></div>
-              <div id="srUser" style="font-size:13px; color:rgba(255,255,255,0.7)"></div>
+        <div class="section-label">
+          <span>Chat history</span>
+          <i class="ri-arrow-right-line"></i>
+        </div>
+
+        <!-- Thread List styled as Cards -->
+        <div class="thread-list" id="threadList">
+          <!-- Threads will be injected here -->
+        </div>
+
+        <!-- Bottom Nav (Visual only) -->
+        <div class="bottom-nav">
+          <div class="nav-item active"><i class="ri-home-5-line"></i><span>Home</span></div>
+          <div class="nav-item"><i class="ri-voiceprint-line"></i><span>Voice</span></div>
+          <div class="nav-item"><i class="ri-history-line"></i><span>History</span></div>
+        </div>
+
+        <!-- Added dedicated Search Panel Overlay inside the left panel -->
+        <div id="searchPanel" class="search-panel-overlay">
+          <div class="search-header">
+            <button class="close-search-btn" onclick="closeSearchPanel()"><i class="ri-arrow-left-line"></i></button>
+            <h2>New Chat</h2>
+          </div>
+          
+          <div class="input-group" style="margin-bottom: 24px;">
+            <input id="searchInput" placeholder="Search users by username..." class="pill-input" onkeyup="onSearchInput(event)" />
+          </div>
+
+          <div id="searchResults" class="search-results-container">
+            <!-- Results injected here -->
+            <div style="text-align:center; color:var(--text-secondary); margin-top:40px;">
+              <i class="ri-search-2-line" style="font-size: 32px; margin-bottom:12px; display:block;"></i>
+              Type a username to find people
             </div>
-            <div><button class="btn" onclick="startChatWithSearch()">Start chat</button></div>
           </div>
         </div>
 
-        <div style="font-size:13px; color:rgba(255,255,255,0.7); margin-bottom:8px;">Chats</div>
-        <div class="thread-list" id="threadList"></div>
       </div>
     </div>
 
-    <!-- RIGHT: chat -->
-    <div class="glass-panel chat-panel" id="chatPanel">
-      <div class="chat-header" id="chatHeader">
-        <div class="back-btn" onclick="closeChat()">←</div>
-        <div class="avatar" id="chatAvatar"><img id="chatAvatarImg" src="/placeholder.svg" alt="" style="display:none;"></div>
-        <div class="title">
-          <div class="name" id="chatName">Select a chat</div>
-          <div class="user" id="chatUser">@username</div>
+    <!-- RIGHT PANEL (Chat Interface) -->
+    <div class="panel chat-panel" id="chatPanel">
+      <div class="chat-topbar">
+        <button class="back-btn" onclick="closeChat()"><i class="ri-arrow-left-line"></i></button>
+        <div class="avatar-sm chat-header-avatar">
+          <img id="chatAvatarImg" alt="Chat Avatar" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;">
+          <div id="chatAvatar" class="click-overlay"></div>
         </div>
+        <div class="chat-info">
+          <div class="chat-title" id="chatName">Job Finder UX</div>
+          <div id="chatUser" class="sub-text"></div>
+        </div>
+        <button class="menu-btn"><i class="ri-more-fill"></i></button>
       </div>
 
-      <div class="messages" id="messages" aria-live="polite"></div>
+      <div class="messages-container" id="messages">
+        <!-- Messages injected here -->
+      </div>
 
-      <div class="composer">
-        <input id="msgInput" placeholder="Type a message..." />
-        <button class="btn send-btn" onclick="onSend()">Send</button>
+      <div class="chat-input-area">
+        <div class="floating-input-bar">
+          <input id="msgInput" placeholder="Type your question..." />
+          <button class="send-fab" onclick="onSend()">
+            <i class="ri-send-plane-fill"></i>
+          </button>
+        </div>
       </div>
     </div>
 
   </div>
 
-  <!-- ********** PFP Modal (shown after registration or via profile) ********** -->
-  <div id="pfpModalOverlay" class="modal-overlay" role="dialog" aria-hidden="true">
-    <div class="modal" id="pfpModal" role="document">
-      <h3 style="margin:0 0 12px 0;">Set profile picture</h3>
-      <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
-        <div class="avatar-xl" id="pfpPreviewWrap">
-          <img id="pfpPreviewImg" src="/placeholder.svg" style="display:none; width:100%; height:100%; object-fit:cover;" />
+  <!-- Modals (Profile, OTP, PFP) - Keeping structure but restyling -->
+  <div id="pfpModalOverlay" class="modal-overlay">
+    <div class="modal card-modal">
+      <h3>Upload photo</h3>
+      <div class="modal-body">
+        <!-- Added proper container with overflow hidden for image preview -->
+        <div class="avatar-preview-container">
+          <div class="avatar-preview" id="pfpPreviewWrap">
+            <img id="pfpPreviewImg" alt="Profile Preview" style="display:none">
+          </div>
         </div>
-        <input id="pfpFile" type="file" accept="image/*" />
-        <label class="small-muted">Use the zoom slider to adjust how the image fits the circular crop</label>
-        <input id="pfpZoom" type="range" min="1" max="2" value="1" step="0.01" style="width:100%" />
-        <div style="display:flex; gap:10px; width:100%; justify-content:flex-end;">
-          <button class="btn-ghost" onclick="skipPfp()">Skip</button>
-          <button class="btn" onclick="savePfp()">Save</button>
+        <input type="range" id="pfpZoom" min="0.5" max="3" step="0.1" value="1" class="zoom-slider">
+        
+        <input id="pfpFile" type="file" accept="image/*" class="hidden" />
+        <label for="pfpFile" class="btn pill-btn secondary">Choose Image</label>
+        <div class="row-btns">
+          <button class="btn text-btn" onclick="skipPfp()">Skip</button>
+          <button class="btn pill-btn primary" onclick="savePfp()">Save</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ********** Profile Modal (view/edit own or view other) ********** -->
-  <div id="profileModalOverlay" class="modal-overlay" role="dialog" aria-hidden="true">
-    <div class="modal" id="profileModal" role="document">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <h3 style="margin:0">Profile</h3>
-        <div>
-          <button id="profileCloseBtn" class="btn-ghost" onclick="closeProfileModal()">Close</button>
-        </div>
+  <div id="otpModalOverlay" class="modal-overlay">
+    <div class="modal card-modal otp-modal">
+      <h3>Verification</h3>
+      <p class="otp-subtitle">Code sent to <span id="otpEmailDisplay"></span></p>
+      <!-- Added data-index attributes for auto-focus logic -->
+      <div class="otp-inputs">
+        <input class="otp-input" maxlength="1" data-index="0" />
+        <input class="otp-input" maxlength="1" data-index="1" />
+        <input class="otp-input" maxlength="1" data-index="2" />
+        <input class="otp-input" maxlength="1" data-index="3" />
+        <input class="otp-input" maxlength="1" data-index="4" />
+        <input class="otp-input" maxlength="1" data-index="5" />
       </div>
-
-      <div style="display:flex; gap:14px; align-items:center; margin-bottom:12px;">
-        <div class="avatar-xl" id="profileAvatarWrap">
-          <img id="profileAvatarImg" src="/placeholder.svg" style="display:none; width:100%; height:100%; object-fit:cover;" />
-        </div>
-        <div style="flex:1">
-          <div id="profileNameDisplay" style="font-weight:800; font-size:18px;"></div>
-          <div id="profileUsernameDisplay" style="color:rgba(255,255,255,0.7); margin-top:6px;"></div>
-        </div>
+      <div id="otpTimer" class="timer-text"></div>
+      <button id="otpResendBtn" class="btn text-btn resend-btn" disabled>Resend Code</button>
+      
+      <div class="otp-actions">
+        <button class="btn pill-btn primary" onclick="verifyOtp()">Verify</button>
+        <button class="btn text-btn" onclick="closeOtpModal()">Cancel</button>
       </div>
-
-      <!-- Editable fields (only for own profile) -->
-      <div id="profileEditArea" style="display:none;">
-        <div class="row">
-          <input id="editName" class="input-underline" placeholder="Display name" />
-        </div>
-        <div class="row" style="align-items:flex-end;">
-          <input id="editUsername" class="input-underline" placeholder="username" />
-          <div id="usernameStatus" style="margin-left:8px;"></div>
-        </div>
-        <div class="row">
-          <textarea id="editAbout" rows="3" class="input-underline" placeholder="About me"></textarea>
-        </div>
-        <div style="display:flex; gap:8px; justify-content:flex-end;">
-          <button class="btn-ghost" onclick="onRemovePfp()">Remove PFP</button>
-          <label class="btn-ghost" style="padding:8px 12px; cursor:pointer;">
-            Upload
-            <input id="editPfpFile" type="file" accept="image/*" style="display:none" />
-          </label>
-          <button class="btn" onclick="saveProfile()">Save</button>
-        </div>
-      </div>
-
-      <!-- Read-only footer -->
-      <div id="profileReadOnlyAbout" style="margin-top:12px; color:rgba(241,245,249,0.75);"></div>
     </div>
   </div>
 
-  <!-- ********** OTP Modal (Premium Glass UI) ********** -->
-<div id="otpModalOverlay" class="modal-overlay" role="dialog" aria-hidden="true">
-  <div class="modal otp-modal" role="document">
+  <div id="profileModalOverlay" class="modal-overlay">
+     <div class="modal card-modal">
+        <div class="profile-header-bg"></div>
+        <div class="modal-header">
+          <h3>Profile</h3>
+          <button onclick="closeProfileModal()"><i class="ri-close-line"></i></button>
+        </div>
+        
+        <div class="profile-view">
+          <img id="profileAvatarImg" alt="Profile" class="avatar-lg" style="display:none">
+          <div id="profileNameDisplay" class="big-name"></div>
+          <div id="profileUsernameDisplay" class="user-handle"></div>
+          
+          <div id="profileReadOnlyAbout" class="about-text"></div>
+        </div>
 
-    <div style="text-align:center; margin-bottom:16px;">
-      <div style="font-size:28px; font-weight:800; color:#6366f1;">OXF</div>
-      <div style="opacity:0.8;">Secure Verification</div>
-    </div>
-
-    <h3 style="text-align:center; margin:0 0 10px 0;">Enter OTP</h3>
-    <p style="text-align:center; color:rgba(241,245,249,0.7); margin-bottom:20px;">
-      We've sent a 6-digit code to <span id="otpEmailDisplay" style="font-weight:600;"></span>
-    </p>
-
-    <!-- OTP BOXES -->
-    <div class="otp-boxes">
-      <input class="otp-input" maxlength="1" inputmode="numeric" />
-      <input class="otp-input" maxlength="1" inputmode="numeric" />
-      <input class="otp-input" maxlength="1" inputmode="numeric" />
-      <input class="otp-input" maxlength="1" inputmode="numeric" />
-      <input class="otp-input" maxlength="1" inputmode="numeric" />
-      <input class="otp-input" maxlength="1" inputmode="numeric" />
-    </div>
-
-    <!-- Timer + Resend -->
-    <div style="text-align:center; margin-top:16px;">
-      <span id="otpTimer" style="color:rgba(241,245,249,0.7);"></span>
-      <br />
-      <button id="otpResendBtn" class="btn-ghost" style="margin-top:6px;" disabled>
-        Resend OTP
-      </button>
-    </div>
-
-    <div style="display:flex; justify-content:flex-end; margin-top:20px; gap:10px;">
-      <button class="btn-ghost" onclick="closeOtpModal()">Cancel</button>
-      <button class="btn" onclick="verifyOtp()">Verify</button>
-    </div>
-
+        <div id="profileEditArea" style="display:none">
+           <input id="editName" class="pill-input" placeholder="Full Name" />
+           <input id="editUsername" class="pill-input" placeholder="Username" />
+           <div id="usernameStatus" class="status-text"></div>
+           <textarea id="editAbout" class="pill-input" placeholder="Write something about yourself..." rows="3"></textarea>
+           
+           <div class="file-input-wrapper">
+             <label for="editPfpFile" class="btn pill-btn secondary xs" style="width:100%">Change Profile Photo</label>
+             <input id="editPfpFile" type="file" accept="image/*" class="hidden" />
+           </div>
+           
+           <div style="display:flex; gap:12px; margin-top:24px;">
+             <button class="btn pill-btn primary" onclick="saveProfile()">Save Changes</button>
+             <button class="btn pill-btn secondary" onclick="onRemovePfp()" style="flex:0.4; border-color:#ff4444; color:#ff4444;">Remove</button>
+           </div>
+        </div>
+     </div>
   </div>
-</div>
-
 
 <script src="https://unpkg.com/convex@1.3.1/dist/browser.bundle.js"></script>
 <script src="script.js"></script>
+<script src="animations.js"></script>
 </body>
 </html>
