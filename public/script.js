@@ -1,11 +1,8 @@
-// script.js — merged, cleaned, and fully animated
-// Dependencies required on page:
-// - gsap + CSSRulePlugin
-// - convex (Convex client library loaded globally as `convex`)
+// ============================================
+// ============ BACKEND CODE - TOP ============
+// ============================================
 
-// ============================================
-// ============ CONFIG / STATE ================
-// ============================================
+// CONFIG
 const CONVEX_URL = "https://doting-pony-792.convex.cloud";
 const client = new convex.ConvexClient(CONVEX_URL);
 
@@ -33,15 +30,10 @@ let pfpZoom = 1;
 // Last search result
 let lastSearch = null;
 
-// Helper
+// Helper function
 function q(id) { return document.getElementById(id); }
 
-// Safe query helper
-function $(sel) { return document.querySelectorAll(sel); }
-
-// ============================================
-// ========== IMAGE COMPRESSION ===============
-// ============================================
+// ========== IMAGE COMPRESSION ==========
 async function compressImage(file, maxWidth=420, quality=0.72){
   return new Promise((resolve,reject)=>{
     const reader = new FileReader();
@@ -70,11 +62,8 @@ async function compressImage(file, maxWidth=420, quality=0.72){
   });
 }
 
-// ============================================
-// ========== PROFILE HELPERS =================
-// ============================================
+// ========== PROFILE HELPERS ==========
 async function getProfile(userId){
-  if(!userId) return null;
   if(profileCache[userId]) return profileCache[userId];
   const p = await client.query("users:getUserById",{id:userId});
   if(p && p.profilePic){
@@ -87,62 +76,49 @@ async function getProfile(userId){
 
 async function setMyProfileUI(){
   if(!currentUser) return;
-  if(q("meName")) q("meName").innerText = currentUser.name || "";
-  if(q("meUser")) q("meUser").innerText = "@"+(currentUser.username || "");
+  q("meName").innerText = currentUser.name;
+  q("meUser").innerText = "@"+currentUser.username;
+
   if(currentUser.profilePic){
     try {
       const url = await client.mutation("storage:getPFPUrl",{storageId:currentUser.profilePic});
-      if(q("meAvatarImg")) { q("meAvatarImg").src = url; q("meAvatarImg").style.display = "block"; }
+      q("meAvatarImg").src = url;
+      q("meAvatarImg").style.display = "block";
     } catch {}
-  } else if(q("meAvatarImg")) q("meAvatarImg").style.display = "none";
+  } else {
+    q("meAvatarImg").style.display = "none";
+  }
 }
 
-// ============================================
-// ========== OTP REGISTRATION FLOW ===========
-// ============================================
+// ========== OTP REGISTRATION FLOW ==========
 async function onRegister(){
-  const name = q("regName")?.value.trim();
-  const username = q("regUser")?.value.trim();
-  const email = q("regEmail")?.value.trim();
-  const password = q("regPass")?.value;
+  const name = q("regName").value.trim();
+  const username = q("regUser").value.trim();
+  const email = q("regEmail").value.trim();
+  const password = q("regPass").value;
 
   if(!name || !username || !email || !password)
     return alert("Please fill all fields");
 
   try {
-    // 1️⃣ request OTP from Convex
-    let rawOtp = await client.mutation("otp:requestOtp", {
+    const otp = await client.mutation("otp:requestOtp", {
       email,
       purpose: "register"
     });
 
-    // 2️⃣ fix OTP format (Convex may return object, number, or undefined)
-    let otp = (typeof rawOtp === "object" && rawOtp?.otp)
-      ? String(rawOtp.otp)
-      : String(rawOtp || "");
-
-    console.log("Sending OTP:", otp); // debug log
-
-    // 3️⃣ send OTP email
     try {
       const res = await fetch("https://chatmail-tan.vercel.app/api/send-otp", {
         method: "POST",
-        mode: "cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp })
       });
-
-      const j = await res.json().catch(()=>null);
-      if(!j || !j.ok) console.warn("OTP mailer reported failure:", j);
-
+      const j = await res.json();
+      if(!j.ok) console.warn("OTP mailer reported failure:", j);
     } catch (e) {
       console.warn("Failed to call OTP mailer:", e);
     }
 
-    // 4️⃣ hold data locally until OTP success
     pendingRegistration = { name, username, email, password };
-
-    // 5️⃣ open OTP modal
     openOtpModal(email);
 
   } catch(err){
@@ -150,31 +126,17 @@ async function onRegister(){
   }
 }
 
-
 function openOtpModal(email){
-  if(!q("otpModalOverlay")) return;
   q("otpModalOverlay").style.display = "flex";
-  if(q("otpEmailDisplay")) q("otpEmailDisplay").innerText = email || "";
+  q("otpEmailDisplay").innerText = email;
 
   document.querySelectorAll(".otp-input").forEach(i=>i.value="");
   const otpInputs = document.querySelectorAll(".otp-input");
-  if(otpInputs && otpInputs.length) otpInputs[0].focus();
+  otpInputs[0].focus();
   startOtpTimer();
-
-  // entrance animation for otp inputs
-  if(window.gsap) {
-    gsap.from('.otp-input', {
-      duration: 0.4,
-      opacity: 0,
-      y: 10,
-      stagger: 0.08,
-      ease: 'back.out'
-    });
-  }
 }
 
 function closeOtpModal(){
-  if(!q("otpModalOverlay")) return;
   q("otpModalOverlay").style.display = "none";
   if (otpInterval) {
     clearInterval(otpInterval);
@@ -189,17 +151,17 @@ function startOtpTimer(){
   }
 
   otpTime = 30;
-  if(q("otpResendBtn")) q("otpResendBtn").disabled = true;
+  q("otpResendBtn").disabled = true;
 
   otpInterval = setInterval(()=>{
     otpTime--;
-    if(q("otpTimer")) q("otpTimer").innerText = `Resend in ${otpTime}s`;
+    q("otpTimer").innerText = `Resend in ${otpTime}s`;
 
     if(otpTime <= 0){
       clearInterval(otpInterval);
       otpInterval = null;
-      if(q("otpTimer")) q("otpTimer").innerText = "";
-      if(q("otpResendBtn")) q("otpResendBtn").disabled = false;
+      q("otpTimer").innerText = "";
+      q("otpResendBtn").disabled = false;
     }
   },1000);
 }
@@ -213,17 +175,6 @@ async function verifyOtp(){
   const otp = boxes.map(b => b.value.trim()).join("");
 
   if(otp.length !== 6){
-    // visual shake if gsap available
-    if(window.gsap) {
-      gsap.to('.otp-input', {
-        duration: 0.4,
-        x: 0,
-        ease: 'back.inOut',
-        onStart: () => {
-          gsap.to('.otp-input', { x: -8, duration: 0.1 });
-        }
-      });
-    }
     return alert("Enter full 6-digit OTP");
   }
 
@@ -235,9 +186,6 @@ async function verifyOtp(){
     });
 
     if(!ok){
-      if(window.gsap) {
-        gsap.to('.otp-input', { duration: 0.4, x: 0, ease: 'back.inOut', onStart: () => gsap.to('.otp-input', { x: -8, duration: 0.1 }) });
-      }
       return alert("Invalid or expired OTP");
     }
 
@@ -259,103 +207,10 @@ async function verifyOtp(){
   }
 }
 
-// resend OTP handler
-if (q("otpResendBtn")) {
-  q("otpResendBtn").onclick = async () => {
-    if (!pendingRegistration) return;
-
-    try {
-      // 1️⃣ Get OTP from Convex
-      let rawOtp = await client.mutation("otp:requestOtp", {
-        email: pendingRegistration.email,
-        purpose: "register"
-      });
-
-      // 2️⃣ Convert OTP into a guaranteed string
-      let otp = (typeof rawOtp === "object" && rawOtp?.otp)
-        ? String(rawOtp.otp)
-        : String(rawOtp || "");
-
-      console.log("Resending OTP:", otp); // debug
-
-      // 3️⃣ Send OTP email
-      try {
-        const res = await fetch("https://chatmail-tan.vercel.app/api/send-otp", {
-          method: "POST",
-          mode: "cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: pendingRegistration.email, otp })
-        });
-
-        const j = await res.json().catch(() => null);
-        if (!j || !j.ok)
-          console.warn("OTP mailer reported failure on resend:", j);
-
-      } catch (e) {
-        console.warn("Failed to call OTP mailer on resend:", e);
-      }
-
-      // 4️⃣ Restart countdown
-      startOtpTimer();
-
-    } catch (e) {
-      alert(e.message || "Failed to resend OTP");
-    }
-  };
-}
-
-
-// Setup OTP input behaviors (focus next, backspace, paste)
-function wireOtpInputs() {
-  const otpInputs = document.querySelectorAll('.otp-input');
-  if(!otpInputs || otpInputs.length===0) return;
-  otpInputs.forEach((input, idx) => {
-    input.addEventListener('input', (e) => {
-      const value = e.target.value;
-      if (!/^\d*$/.test(value)) {
-        e.target.value = '';
-        return;
-      }
-      if (value.length === 1 && idx < otpInputs.length - 1) {
-        if(window.gsap) gsap.to(otpInputs[idx + 1], { duration: 0.2, scale: 1.1, ease: 'back.out' });
-        otpInputs[idx + 1].focus();
-      }
-    });
-
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && !input.value && idx > 0) {
-        otpInputs[idx - 1].focus();
-        otpInputs[idx - 1].value = '';
-      }
-    });
-
-    input.addEventListener('paste', (e) => {
-      e.preventDefault();
-      const pastedData = e.clipboardData.getData('text');
-      const digits = pastedData.replace(/\D/g, '').split('');
-
-      digits.forEach((digit, i) => {
-        if (idx + i < otpInputs.length) {
-          otpInputs[idx + i].value = digit;
-          if(window.gsap) gsap.to(otpInputs[idx + i], { duration: 0.2, scale: 1.05, ease: 'back.out' }); // paste animation
-        }
-      });
-
-      const lastIdx = Math.min(idx + digits.length, otpInputs.length - 1);
-      otpInputs[lastIdx].focus();
-    });
-  });
-}
-
-// call wiring after DOM elements present
-document.addEventListener('DOMContentLoaded', wireOtpInputs);
-
-// ============================================
-// ========== AUTH / LOGIN / LOGOUT ===========
-// ============================================
+// ========== LOGIN ==========
 async function onLogin(){
-  const username = q("loginUser")?.value.trim();
-  const pass = q("loginPass")?.value;
+  const username = q("loginUser").value.trim();
+  const pass = q("loginPass").value;
   if(!username || !pass) return alert("Provide credentials");
 
   try{
@@ -363,7 +218,7 @@ async function onLogin(){
     currentUser = await client.query("users:getUserById",{id:u._id});
     afterLogin();
   }catch(e){
-    alert(e.message || "Login failed");
+    alert(e.message);
   }
 }
 
@@ -373,68 +228,51 @@ function afterLogin(){
   startChatListSubscription();
 }
 
+// ========== LOGOUT ==========
 function logout(){
   currentUser = null;
   activeOtherId = null;
   if(chatSubStop) chatSubStop();
   if(listSubStop) listSubStop();
-  if(q("threadList")) q("threadList").innerHTML = "";
-  if(q("messages")) q("messages").innerHTML = "";
+  q("threadList").innerHTML = "";
+  q("messages").innerHTML = "";
   showRegister();
 }
 
-// ============================================
-// ========== NAVIGATION & UI HELPERS =========
-// ============================================
+// ========== NAVIGATION ==========
 function showScreen(screenId) {
   ["screen-register","screen-login","screen-list"].forEach(s=>{
     const el = q(s); if(!el) return;
     el.classList.remove("active");
     el.style.display = "none";
   });
-  const tgt = q(screenId);
-  if(tgt) {
-    tgt.style.display = "block";
-    tgt.classList.add("active");
-  }
-  // hide chat panel if no user or no active chat
-  if(q("chatPanel") && (!currentUser || !activeOtherId)) q("chatPanel").classList.remove("open");
+  q(screenId).style.display = "block";
+  q(screenId).classList.add("active");
+
+  if(!currentUser || !activeOtherId) q("chatPanel").classList.remove("open");
 }
+
 function showRegister() { showScreen("screen-register"); }
 function showLogin() { showScreen("screen-login"); }
-function showChatList() { showScreen("screen-list"); if(window.gsap) gsap.from('.thread', { duration: 0.4, opacity: 0, x: -20, stagger: 0.05, ease: 'power2.out' }); }
+function showChatList() { showScreen("screen-list"); }
 
 function showChatPanelUI(){
   const chatPanel = q("chatPanel");
   if(!chatPanel) return;
   chatPanel.classList.add("open");
-  // focus messages container if available
-  if(q("messages")) q("messages").focus();
+  q("messages").focus();
 }
 
-function closeChat(){
+function closeChat() {
   const chatPanel = q("chatPanel");
   if(!chatPanel) return;
-  // smooth close animation
-  if(window.gsap) {
-    gsap.to(chatPanel, { duration: 0.3, x: '100%', opacity: 0, ease: 'power2.in', onComplete: ()=> chatPanel.classList.remove('open') });
-  } else {
-    chatPanel.classList.remove('open');
-  }
-  // Stop chat subscription
-  if(chatSubStop) {
-    try { chatSubStop(); } catch {}
-    chatSubStop = null;
-  }
-  activeOtherId = null;
+  chatPanel.classList.remove("open");
 }
 
-// ============================================
-// ========== SEARCH & START CHAT =============
-// ============================================
+// ========== SEARCH ==========
 async function onSearch(){
   if(!currentUser) return alert("Login first");
-  const username = q("searchInput")?.value.trim();
+  const username = q("searchInput").value.trim();
   if(!username) return;
 
   try{
@@ -442,42 +280,36 @@ async function onSearch(){
     if(!u) return alert("User not found");
 
     lastSearch = u;
-    if(q("searchResult")) q("searchResult").style.display = "block";
-    if(q("srName")) q("srName").innerText = u.name;
-    if(q("srUser")) q("srUser").innerText = "@"+u.username;
+    q("searchResult").style.display = "block";
+    q("srName").innerText = u.name;
+    q("srUser").innerText = "@"+u.username;
 
     if(u.profilePic){
       try{
         const url = await client.mutation("storage:getPFPUrl",{storageId:u.profilePic});
-        if(q("srAvatarImg")) { q("srAvatarImg").src = url; q("srAvatarImg").style.display = "block"; }
+        q("srAvatarImg").src = url;
+        q("srAvatarImg").style.display = "block";
       }catch{}
-    } else if(q("srAvatarImg")) q("srAvatarImg").style.display = "none";
+    } else q("srAvatarImg").style.display = "none";
 
   }catch(e){
-    alert(e.message || "Search failed");
+    alert(e.message);
   }
 }
 
 async function startChatWithSearch(){
   if(!lastSearch) return;
   await openChat(lastSearch._id);
-  if(q("searchResult")) q("searchResult").style.display = "none";
-  if(q("searchInput")) q("searchInput").value = "";
+  q("searchResult").style.display = "none";
+  q("searchInput").value = "";
 }
 
-// ============================================
 // ========== CHAT LIST SUBSCRIPTION ==========
-// ============================================
 function startChatListSubscription(){
-  if(!currentUser || !currentUser._id) return;
-  if(listSubStop) {
-    try { listSubStop(); } catch {}
-    listSubStop = null;
-  }
+  if(listSubStop) listSubStop();
 
   listSubStop = client.onUpdate("chatList:getChatList",{userId:currentUser._id}, async (threads)=>{
     const container = q("threadList");
-    if(!container) return;
     container.innerHTML = "";
 
     if(!threads || threads.length===0){
@@ -538,23 +370,21 @@ function startChatListSubscription(){
   });
 }
 
-// ============================================
-// ========== OPEN CHAT & MESSAGES ============
-// ============================================
+// ========== OPEN CHAT ==========
 async function openChat(otherUserId){
   if(!currentUser) return alert("Login first");
-  if(!otherUserId) return;
 
   activeOtherId = otherUserId;
 
   const other = await getProfile(otherUserId);
 
-  if(q("chatName")) q("chatName").innerText = other?.name || "Unknown";
-  if(q("chatUser")) q("chatUser").innerText = "@"+(other?.username || "");
+  q("chatName").innerText = other?.name || "Unknown";
+  q("chatUser").innerText = "@"+(other?.username || "");
 
   if(other?.avatarUrl){
-    if(q("chatAvatarImg")) { q("chatAvatarImg").src = other.avatarUrl; q("chatAvatarImg").style.display = "block"; }
-  } else if(q("chatAvatarImg")) q("chatAvatarImg").style.display="none";
+    q("chatAvatarImg").src = other.avatarUrl;
+    q("chatAvatarImg").style.display = "block";
+  } else q("chatAvatarImg").style.display="none";
 
   try{
     await client.mutation("privateChat:markThreadRead",{userId:currentUser._id, otherId:otherUserId});
@@ -562,95 +392,49 @@ async function openChat(otherUserId){
 
   showChatPanelUI();
 
-  // animate chat panel open
-  const chatPanel = q("chatPanel");
-  if(chatPanel && window.gsap) {
-    gsap.fromTo(chatPanel, { x: '8%', opacity: 0 }, { duration: 0.35, x: 0, opacity: 1, ease: 'power2.out' });
-    chatPanel.classList.add('open');
-  } else if(chatPanel) {
-    chatPanel.classList.add('open');
-  }
-
-  // stop old subscription if any
-  if(chatSubStop) {
-    try { chatSubStop(); } catch {}
-    chatSubStop = null;
-  }
-
+  if(chatSubStop) chatSubStop();
   chatSubStop = client.onUpdate(
     "privateChat:getPrivateMessages",
     {senderId:currentUser._id, receiverId:otherUserId},
     (msgs)=>{
       const box = q("messages");
-      if(!box) return;
       box.innerHTML = "";
       msgs.forEach(m=>{
         const b = document.createElement("div");
         b.className = "bubble " + (m.senderId===currentUser._id ? "me" : "");
         b.innerText = m.body;
-
         const time = document.createElement("div");
         time.className = "meta";
-        try {
-          time.innerText = new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        } catch { time.innerText = ""; }
+        time.innerText = new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
         b.appendChild(time);
-
         box.appendChild(b);
-
-        // animate each bubble
-        if(window.gsap) {
-          gsap.from(b, { duration: 0.28, y: 10, opacity: 0, ease: 'back.out' });
-        }
       });
       box.scrollTop = box.scrollHeight;
     }
   );
 }
 
-// ============================================
-// ========== SEND MESSAGE ====================
-// ============================================
+// ========== SEND MESSAGE ==========
 async function onSend(){
-  const txt = q("msgInput")?.value.trim();
+  const txt = q("msgInput").value.trim();
   if(!txt || !activeOtherId) return;
 
-  try {
-    await client.mutation("privateChat:sendPrivateMessage",{
-      senderId:currentUser._id,
-      receiverId:activeOtherId,
-      body:txt
-    });
-    if(q("msgInput")) q("msgInput").value = "";
+  await client.mutation("privateChat:sendPrivateMessage",{
+    senderId:currentUser._id,
+    receiverId:activeOtherId,
+    body:txt
+  });
 
-    // small send animation on button
-    const sendBtn = document.querySelector('.send-btn');
-    if(sendBtn && window.gsap) {
-      gsap.to(sendBtn, { duration: 0.12, scale: 0.92 });
-      gsap.to(sendBtn, { duration: 0.35, scale: 1, ease: 'elastic.out(1.5, 0.5)', delay: 0.12 });
-    }
-  } catch(e){
-    console.warn("Send message failed:", e);
-  }
+  q("msgInput").value = "";
 }
 
-// support Enter to send
-document.addEventListener('keydown', (e) => {
-  // if focus on msgInput and Enter pressed (no shift)
-  if(e.key === 'Enter' && !e.shiftKey && document.activeElement === q("msgInput")) {
-    e.preventDefault();
-    onSend();
-  }
-});
-
-// ============================================
-// ========== PROFILE EDIT / PFP =============
-// ============================================
+// ========== PROFILE MANAGEMENT ==========
 async function openMyProfile(){
   if(!currentUser) return;
   profileIsOwner = true;
   await fillProfileModal(currentUser, true);
-  if(q("profileModalOverlay")) { q("profileModalOverlay").style.display = "flex"; q("profileModalOverlay").setAttribute("aria-hidden","false"); }
+  q("profileModalOverlay").style.display = "flex";
+  q("profileModalOverlay").setAttribute("aria-hidden","false");
 }
 
 async function openOtherProfile(userId){
@@ -658,71 +442,74 @@ async function openOtherProfile(userId){
   if(!u) return alert("User not found");
   profileIsOwner = (currentUser && currentUser._id === userId);
   await fillProfileModal(u, profileIsOwner);
-  if(q("profileModalOverlay")) { q("profileModalOverlay").style.display = "flex"; q("profileModalOverlay").setAttribute("aria-hidden","false"); }
+  q("profileModalOverlay").style.display = "flex";
+  q("profileModalOverlay").setAttribute("aria-hidden","false");
 }
 
 function closeProfileModal(){
-  if(q("profileModalOverlay")) { q("profileModalOverlay").style.display = "none"; q("profileModalOverlay").setAttribute("aria-hidden","true"); }
+  q("profileModalOverlay").style.display = "none";
+  q("profileModalOverlay").setAttribute("aria-hidden","true");
 }
 
 async function fillProfileModal(userObj, editable){
-  if(q("profileNameDisplay")) q("profileNameDisplay").innerText = userObj.name || "";
-  if(q("profileUsernameDisplay")) q("profileUsernameDisplay").innerText = "@"+(userObj.username || "");
+  q("profileNameDisplay").innerText = userObj.name || "";
+  q("profileUsernameDisplay").innerText = "@"+(userObj.username || "");
   if(userObj.profilePic){
     try{
       const url = await client.mutation("storage:getPFPUrl", { storageId: userObj.profilePic });
-      if(q("profileAvatarImg")) { q("profileAvatarImg").src = url; q("profileAvatarImg").style.display = "block"; }
+      q("profileAvatarImg").src = url;
+      q("profileAvatarImg").style.display = "block";
     }catch(e){
-      if(q("profileAvatarImg")) q("profileAvatarImg").style.display = "none";
-    }
-  } else if(q("profileAvatarImg")) q("profileAvatarImg").style.display = "none";
-
-  if(editable){
-    if(q("profileEditArea")) q("profileEditArea").style.display = "block";
-    if(q("profileReadOnlyAbout")) q("profileReadOnlyAbout").style.display = "none";
-    if(q("editName")) q("editName").value = userObj.name || "";
-    if(q("editUsername")) q("editUsername").value = userObj.username || "";
-    if(q("editAbout")) q("editAbout").value = userObj.about || "";
-
-    if(q("editUsername")) {
-      q("editUsername").oninput = async ()=>{
-        const val = q("editUsername").value.trim();
-        if(!val) { if(q("usernameStatus")) q("usernameStatus").innerText = ""; return; }
-        try{
-          const available = await client.query("users:checkUsername", { username: val });
-          if(available || val === (currentUser && currentUser.username)){
-            if(q("usernameStatus")) { q("usernameStatus").innerText = "Available ✔"; q("usernameStatus").className = "status-available"; }
-          } else {
-            if(q("usernameStatus")) { q("usernameStatus").innerText = "Unavailable ✖"; q("usernameStatus").className = "status-unavailable"; }
-          }
-        }catch(e){
-          if(q("usernameStatus")) q("usernameStatus").innerText = "";
-        }
-      };
-    }
-
-    if(q("editPfpFile")) {
-      q("editPfpFile").onchange = (ev)=>{
-        const f = ev.target.files && ev.target.files[0];
-        if(!f) return;
-        const r = new FileReader();
-        r.onload = ()=>{
-          if(q("profileAvatarImg")) { q("profileAvatarImg").src = r.result; q("profileAvatarImg").style.display = "block"; }
-        };
-        r.readAsDataURL(f);
-      };
+      q("profileAvatarImg").style.display = "none";
     }
   } else {
-    if(q("profileEditArea")) q("profileEditArea").style.display = "none";
-    if(q("profileReadOnlyAbout")) { q("profileReadOnlyAbout").style.display = "block"; q("profileReadOnlyAbout").innerText = userObj.about || ""; }
+    q("profileAvatarImg").style.display = "none";
+  }
+
+  if(editable){
+    q("profileEditArea").style.display = "block";
+    q("profileReadOnlyAbout").style.display = "none";
+    q("editName").value = userObj.name || "";
+    q("editUsername").value = userObj.username || "";
+    q("editAbout").value = userObj.about || "";
+    q("editUsername").oninput = async ()=>{
+      const val = q("editUsername").value.trim();
+      if(!val) { q("usernameStatus").innerText = ""; return; }
+      try{
+        const available = await client.query("users:checkUsername", { username: val });
+        if(available || val === (currentUser && currentUser.username)){
+          q("usernameStatus").innerText = "Available ✔";
+          q("usernameStatus").className = "status-available";
+        } else {
+          q("usernameStatus").innerText = "Unavailable ✖";
+          q("usernameStatus").className = "status-unavailable";
+        }
+      }catch(e){
+        q("usernameStatus").innerText = "";
+      }
+    };
+    q("editPfpFile").onchange = (ev)=>{
+      const f = ev.target.files && ev.target.files[0];
+      if(!f) return;
+      const r = new FileReader();
+      r.onload = ()=>{
+        q("profileAvatarImg").src = r.result;
+        q("profileAvatarImg").style.display = "block";
+      };
+      r.readAsDataURL(f);
+    };
+  } else {
+    q("profileEditArea").style.display = "none";
+    q("profileReadOnlyAbout").style.display = "block";
+    q("profileReadOnlyAbout").innerText = userObj.about || "";
   }
 }
 
 async function saveProfile(){
   if(!currentUser) return;
-  const name = q("editName")?.value.trim();
-  const username = q("editUsername")?.value.trim();
-  const about = q("editAbout")?.value;
+  const name = q("editName").value.trim();
+  const username = q("editUsername").value.trim();
+  const about = q("editAbout").value;
 
   try{
     const available = await client.query("users:isUsernameAvailable", { username });
@@ -730,7 +517,8 @@ async function saveProfile(){
       alert("Username is taken");
       return;
     }
-  }catch(e){}
+  }catch(e){
+  }
 
   try{
     await client.mutation("users:updateProfile", {
@@ -740,7 +528,7 @@ async function saveProfile(){
       about
     });
 
-    const pf = q("editPfpFile")?.files && q("editPfpFile").files[0];
+    const pf = q("editPfpFile").files && q("editPfpFile").files[0];
     if (pf) {
       const dataUrl = await compressImage(pf, 800, 0.8);
       const binary = atob(dataUrl.split(",")[1]);
@@ -758,7 +546,9 @@ async function saveProfile(){
 
       const { storageId } = await result.json();
 
-      if(!currentUser || !currentUser._id) throw new Error("No currentUser set – cannot save PFP");
+      if(!currentUser || !currentUser._id) {
+        throw new Error("No currentUser set – cannot save PFP");
+      }
 
       await client.mutation("storage:savePFP", {
         userId: currentUser._id,
@@ -781,45 +571,29 @@ async function onRemovePfp(){
     await client.mutation("users:removePFP", { userId: currentUser._id });
     currentUser = await client.query("users:getUserById", { id: currentUser._id });
     setMyProfileUI();
-    if(q("profileAvatarImg")) q("profileAvatarImg").style.display = "none";
+    q("profileAvatarImg").style.display = "none";
   }catch(e){
     alert("Failed to remove");
   }
 }
 
-// PFP modal helpers
+// ========== PFP MODAL ==========
 function openPfpModal(){
-  if(q("pfpModalOverlay")) q("pfpModalOverlay").style.display="flex";
-  if(q("pfpPreviewImg")) q("pfpPreviewImg").style.display="none";
-  if(q("pfpFile")) q("pfpFile").value="";
-  if(q("pfpZoom")) q("pfpZoom").value=1;
+  q("pfpModalOverlay").style.display="flex";
+  q("pfpPreviewImg").style.display="none";
+  q("pfpFile").value="";
+  q("pfpZoom").value=1;
   pfpFile=null;
   pfpZoom=1;
 }
 
 function skipPfp(){
-  if(q("pfpModalOverlay")) q("pfpModalOverlay").style.display="none";
+  q("pfpModalOverlay").style.display="none";
   (async()=>{
     currentUser = await client.query("users:getUserById",{id:currentUser._id});
     afterLogin();
   })();
 }
-
-if(q("pfpFile")) q("pfpFile").addEventListener("change",e=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  pfpFile = file;
-  const r = new FileReader();
-  r.onload = ()=>{
-    if(q("pfpPreviewImg")) { q("pfpPreviewImg").style.display="block"; q("pfpPreviewImg").src = r.result; }
-  };
-  r.readAsDataURL(file);
-});
-
-if(q("pfpZoom")) q("pfpZoom").oninput = e=>{
-  pfpZoom = parseFloat(e.target.value);
-  if(q("pfpPreviewImg")) q("pfpPreviewImg").style.transform = `scale(${pfpZoom})`;
-};
 
 async function savePfp(){
   if(!pfpFile) return skipPfp();
@@ -846,7 +620,7 @@ async function savePfp(){
     currentUser = await client.query("users:getUserById",{id:currentUser._id});
     setMyProfileUI();
 
-    if(q("pfpModalOverlay")) q("pfpModalOverlay").style.display="none";
+    q("pfpModalOverlay").style.display="none";
     afterLogin();
 
   }catch(e){
@@ -855,116 +629,177 @@ async function savePfp(){
 }
 
 // ============================================
-// ========== FRONTEND ANIMATIONS =============
+// =========== FRONTEND CODE - BOTTOM =========
 // ============================================
 
-// Initialize GSAP plugin if present
-if(window.gsap && window.CSSRulePlugin) {
-  try { gsap.registerPlugin(CSSRulePlugin); } catch(e){}
-}
+// Initialize GSAP
+gsap.registerPlugin(CSSRulePlugin);
 
 window.addEventListener('load', () => {
-  if(window.gsap) {
-    gsap.timeline()
-      .from('.brand', { duration: 0.6, opacity: 0, y: -20, ease: 'back.out' }, 0)
-      .from('.screen.active .field', { duration: 0.5, opacity: 0, y: 10, stagger: 0.08 }, 0.2);
+  gsap.timeline()
+    .from('.brand', { duration: 0.6, opacity: 0, y: -20, ease: 'back.out' }, 0)
+    .from('.screen.active .field', { duration: 0.5, opacity: 0, y: 10, stagger: 0.08 }, 0.2);
+});
+
+document.querySelectorAll('.btn').forEach(btn => {
+  btn.addEventListener('mouseenter', function() {
+    gsap.to(this, { duration: 0.2, scale: 1.03, ease: 'power2.out' });
+  });
+  
+  btn.addEventListener('mouseleave', function() {
+    gsap.to(this, { duration: 0.2, scale: 1, ease: 'power2.out' });
+  });
+
+  btn.addEventListener('click', function(e) {
+    gsap.to(this, { duration: 0.1, scale: 0.95, ease: 'power2.out' });
+    gsap.to(this, { duration: 0.3, scale: 1, ease: 'elastic.out(1.5, 0.5)', delay: 0.1 });
+  });
+});
+
+document.querySelectorAll('.thread').forEach(thread => {
+  thread.addEventListener('mouseenter', function() {
+    gsap.to(this, { duration: 0.25, x: 6, ease: 'power2.out' });
+  });
+  
+  thread.addEventListener('mouseleave', function() {
+    gsap.to(this, { duration: 0.25, x: 0, ease: 'power2.out' });
+  });
+});
+
+document.querySelectorAll('input:not(.otp-input), textarea').forEach(input => {
+  input.addEventListener('focus', function() {
+    gsap.to(this, { duration: 0.2, boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.15)', ease: 'power2.out' });
+  });
+  
+  input.addEventListener('blur', function() {
+    gsap.to(this, { duration: 0.2, boxShadow: 'none', ease: 'power2.out' });
+  });
+});
+
+document.querySelectorAll('.fab').forEach(fab => {
+  fab.addEventListener('mouseenter', function() {
+    gsap.to(this, { duration: 0.3, scale: 1.1, rotation: 10, ease: 'back.out' });
+  });
+  
+  fab.addEventListener('mouseleave', function() {
+    gsap.to(this, { duration: 0.3, scale: 1, rotation: 0, ease: 'back.out' });
+  });
+});
+
+q("msgInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    onSend();
+    const sendBtn = document.querySelector('.send-btn');
+    gsap.to(sendBtn, { duration: 0.15, scale: 0.92 });
+    gsap.to(sendBtn, { duration: 0.3, scale: 1, ease: 'elastic.out(1.5, 0.5)', delay: 0.15 });
   }
 });
 
-// Button ripple + micro interactions
-if($('.btn').length) {
-  document.querySelectorAll('.btn').forEach(btn => {
-    btn.addEventListener('mouseenter', function() {
-      if(window.gsap) gsap.to(this, { duration: 0.18, scale: 1.03, ease: 'power2.out' });
-    });
-
-    btn.addEventListener('mouseleave', function() {
-      if(window.gsap) gsap.to(this, { duration: 0.18, scale: 1, ease: 'power2.out' });
-    });
-
-    btn.addEventListener('click', function(e) {
-      if(window.gsap) {
-        gsap.to(this, { duration: 0.09, scale: 0.95, ease: 'power2.out' });
-        gsap.to(this, { duration: 0.32, scale: 1, ease: 'elastic.out(1.5, 0.5)', delay: 0.09 });
-      }
-    });
-  });
-}
-
-// Thread hover
-if($('.thread').length) {
-  document.querySelectorAll('.thread').forEach(thread => {
-    thread.addEventListener('mouseenter', function() {
-      if(window.gsap) gsap.to(this, { duration: 0.22, x: 6, ease: 'power2.out' });
-    });
-    thread.addEventListener('mouseleave', function() {
-      if(window.gsap) gsap.to(this, { duration: 0.22, x: 0, ease: 'power2.out' });
-    });
-  });
-}
-
-// Input focus glow
-if($('input:not(.otp-input), textarea').length) {
-  document.querySelectorAll('input:not(.otp-input), textarea').forEach(input => {
-    input.addEventListener('focus', function() {
-      if(window.gsap) gsap.to(this, { duration: 0.2, boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.15)', ease: 'power2.out' });
-    });
-
-    input.addEventListener('blur', function() {
-      if(window.gsap) gsap.to(this, { duration: 0.2, boxShadow: 'none', ease: 'power2.out' });
-    });
-  });
-}
-
-// FAB hover
-if($('.fab').length) {
-  document.querySelectorAll('.fab').forEach(fab => {
-    fab.addEventListener('mouseenter', function() {
-      if(window.gsap) gsap.to(this, { duration: 0.3, scale: 1.1, rotation: 10, ease: 'back.out' });
-    });
-    fab.addEventListener('mouseleave', function() {
-      if(window.gsap) gsap.to(this, { duration: 0.3, scale: 1, rotation: 0, ease: 'back.out' });
-    });
-  });
-}
-
-// Enter key handling for msgInput (with send button animation)
-if(q("msgInput")) {
-  q("msgInput").addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      onSend();
-      const sendBtn = document.querySelector('.send-btn');
-      if(sendBtn && window.gsap) {
-        gsap.to(sendBtn, { duration: 0.15, scale: 0.92 });
-        gsap.to(sendBtn, { duration: 0.3, scale: 1, ease: 'elastic.out(1.5, 0.5)', delay: 0.15 });
-      }
+const otpInputs = document.querySelectorAll('.otp-input');
+otpInputs.forEach((input, idx) => {
+  input.addEventListener('input', (e) => {
+    const value = e.target.value;
+    
+    if (!/^\d*$/.test(value)) {
+      e.target.value = '';
+      return;
+    }
+    
+    if (value.length === 1 && idx < otpInputs.length - 1) {
+      gsap.to(otpInputs[idx + 1], { duration: 0.2, scale: 1.1, ease: 'back.out' });
+      otpInputs[idx + 1].focus();
     }
   });
+  
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace' && !input.value && idx > 0) {
+      otpInputs[idx - 1].focus();
+      otpInputs[idx - 1].value = '';
+    }
+  });
+  
+  input.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text');
+    const digits = pastedData.replace(/\D/g, '').split('');
+    
+    digits.forEach((digit, i) => {
+      if (idx + i < otpInputs.length) {
+        otpInputs[idx + i].value = digit;
+        gsap.to(otpInputs[idx + i], { duration: 0.2, scale: 1.05, ease: 'back.out' });
+      }
+    });
+    
+    const lastIdx = Math.min(idx + digits.length, otpInputs.length - 1);
+    otpInputs[lastIdx].focus();
+  });
+});
+
+function openOtpModalWithAnimation(email){
+  openOtpModal(email);
+  gsap.from('.otp-input', {
+    duration: 0.4,
+    opacity: 0,
+    y: 10,
+    stagger: 0.08,
+    ease: 'back.out'
+  });
 }
 
-// Background parallax
+q("meAvatar").addEventListener("click", ()=> openMyProfile());
+q("chatAvatar").addEventListener("click", async ()=>{
+  if(!activeOtherId) return;
+  await openOtherProfile(activeOtherId);
+});
+
+function showChatListAnimated() {
+  showChatList();
+  gsap.from('.thread', { duration: 0.4, opacity: 0, x: -20, stagger: 0.05, ease: 'power2.out' });
+}
+
+function openChatAnimated(otherId) {
+  openChat(otherId);
+  const chatPanel = document.getElementById('chatPanel');
+  gsap.to(chatPanel, { duration: 0.3, x: 0, opacity: 1, ease: 'power2.out' });
+}
+
+function closeChatAnimated() {
+  const chatPanel = document.getElementById('chatPanel');
+  gsap.to(chatPanel, { 
+    duration: 0.3, 
+    x: '100%', 
+    opacity: 0, 
+    ease: 'power2.in',
+    onComplete: () => closeChat()
+  });
+}
+
 document.addEventListener("mousemove",e=>{
   const x = (e.clientX/window.innerWidth - 0.5) * 10;
   const y = (e.clientY/window.innerHeight - 0.5) * 10;
   document.body.style.backgroundPosition = `calc(50% + ${x}px) calc(50% + ${y}px)`;
 });
 
-// Small helpers for animated opens
-function openOtpModalWithAnimation(email){ openOtpModal(email); if(window.gsap) gsap.from('.otp-input', { duration: 0.4, opacity: 0, y: 10, stagger: 0.08, ease: 'back.out' }); }
-function showChatListAnimated() { showChatList(); if(window.gsap) gsap.from('.thread', { duration: 0.4, opacity: 0, x: -20, stagger: 0.05, ease: 'power2.out' }); }
-function openChatAnimated(otherId) { openChat(otherId); const chatPanel = q('chatPanel'); if(chatPanel && window.gsap) gsap.to(chatPanel, { duration: 0.3, x: 0, opacity: 1, ease: 'power2.out' }); }
-function closeChatAnimated() { const chatPanel = q('chatPanel'); if(chatPanel && window.gsap) gsap.to(chatPanel, { duration: 0.3, x: '100%', opacity: 0, ease: 'power2.in', onComplete: () => closeChat() }); }
+q("pfpFile").addEventListener("change",e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  pfpFile = file;
+  const r = new FileReader();
+  r.onload = ()=>{
+    q("pfpPreviewImg").style.display="block";
+    q("pfpPreviewImg").src = r.result;
+  };
+  r.readAsDataURL(file);
+});
 
-// wire avatar click shortcuts if present
-if(q("meAvatar")) q("meAvatar").addEventListener("click", ()=> openMyProfile());
-if(q("chatAvatar")) q("chatAvatar").addEventListener("click", async ()=>{ if(!activeOtherId) return; await openOtherProfile(activeOtherId); });
+q("pfpZoom").oninput = e=>{
+  pfpZoom = parseFloat(e.target.value);
+  q("pfpPreviewImg").style.transform = `scale(${pfpZoom})`;
+};
 
-// export debug hooks
-window.LG = {client, getProfile, openChat, logout, openOtpModal, openPfpModal};
+// Export globals for debugging
+window.LG = {client, getProfile, openChat, logout};
 
-// ============================================
-// ========== INITIALIZE SCREEN ===============
-// ============================================
+// Initial screen
 showRegister();
-wireOtpInputs();
