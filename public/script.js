@@ -1,6 +1,6 @@
 // ********** CONFIG **********
 const CONVEX_URL = "https://doting-pony-792.convex.cloud";
-// const CONVEX_URL = "https://impartial-dachshund-607.convex.cloud"; 
+// const CONVEX_URL = "https://impartial-dachshund-607.convex.cloud";
 const client = new convex.ConvexClient(CONVEX_URL);
 
 // app state
@@ -529,10 +529,6 @@ async function openChat(otherUserId) {
   q("chatName").innerText = other?.name || "Unknown";
   if (q("chatUser")) q("chatUser").innerText = "@" + (other?.username || "");
 
-  if (other?.avatarUrl) {
-    q("chatAvatarImg").src = other.avatarUrl;
-    q("chatAvatarImg").style.display = "block";
-  } else q("chatAvatarImg").style.display = "none";
 
   try {
     await client.mutation("privateChat:markThreadRead", {
@@ -589,8 +585,10 @@ async function openChat(otherUserId) {
             const pill = document.createElement("div");
             pill.className = "reaction-pill";
             pill.innerText = `${emoji} ${c}`;
+            pill.onclick = () => openReactionInfo(m, emoji);
             bar.appendChild(pill);
           }
+
           b.appendChild(bar);
         }
 
@@ -626,7 +624,7 @@ async function onSend() {
     senderId: currentUser._id,
     receiverId: activeOtherId,
     body: txt,
-    replyToId: currentReplyTarget ? currentReplyTarget._id : undefined
+    replyToId: currentReplyTarget ? currentReplyTarget._id : undefined,
   };
 
   await client.mutation("privateChat:sendPrivateMessage", payload);
@@ -733,8 +731,7 @@ function startReply(msg) {
     bar = document.createElement("div");
     bar.id = "replyBar";
 
-   const composer = document.querySelector(".floating-input-bar");
-
+    const composer = document.querySelector(".floating-input-bar");
 
     if (!composer) {
       console.warn("❗ .composer not found when starting reply");
@@ -777,7 +774,6 @@ async function deleteMessage(messageId, forEveryone) {
     forEveryone,
   });
 }
-
 
 // background parallax
 document.addEventListener("mousemove", (e) => {
@@ -1034,13 +1030,51 @@ async function onRemovePfp() {
 if (q("meAvatar"))
   q("meAvatar").addEventListener("click", () => openMyProfile());
 // make chat header avatar clickable (view other's profile)
-if (q("chatAvatar"))
-  q("chatAvatar").addEventListener("click", async () => {
-    if (!activeOtherId) return;
-    await openOtherProfile(activeOtherId);
-  });
 
 window.LG = { client, getProfile, openChat, logout };
+
+// ========== REACTION INFO POPUP ==========
+
+async function openReactionInfo(msg, emoji) {
+  const modal = q("reactionInfoModal");
+  const listBox = q("rimList");
+  const emojiBox = q("rimEmoji");
+
+  if (!modal || !listBox) return;
+
+  emojiBox.innerText = emoji;
+  listBox.innerHTML = "";
+
+  // Filter users who reacted with this emoji
+  const reactions = msg.reactions || {};
+  const users = Object.keys(reactions).filter(
+    (uid) => reactions[uid] === emoji
+  );
+
+  // Load profiles for each
+  for (let uid of users) {
+    let profile = profileCache[uid];
+    if (!profile) {
+      profile = await getProfile(uid);
+      profileCache[uid] = profile;
+    }
+
+    const item = document.createElement("div");
+    item.className = "rim-item";
+    item.innerHTML = `
+      <img src="${profile?.avatarUrl || "assets/default.png"}" />
+      <div class="name">${profile?.name || profile?.username}</div>
+    `;
+    listBox.appendChild(item);
+  }
+
+  modal.style.display = "flex";
+}
+
+function closeReactionInfo() {
+  const modal = q("reactionInfoModal");
+  if (modal) modal.style.display = "none";
+}
 
 // ========== CHAT LIST SUBSCRIPTION ==========
 function startChatListSubscription() {

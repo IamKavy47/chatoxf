@@ -244,7 +244,7 @@
           <button class="back-btn" onclick="closeChat()">
             <i class="ri-arrow-left-line"></i>
           </button>
-          <div class="avatar-sm chat-header-avatar">
+          <!-- <div class="avatar-sm chat-header-avatar">
             <img
               id="chatAvatarImg"
               alt="Chat Avatar"
@@ -257,7 +257,7 @@
               "
             />
             <div id="chatAvatar" class="click-overlay"></div>
-          </div>
+          </div> -->
           <div class="chat-info">
             <div class="chat-title" id="chatName">User</div>
             <div id="chatUser" class="sub-text"></div>
@@ -431,6 +431,21 @@
           Delete Message
         </div>
         <div class="sheet-btn cancel" onclick="closeMsgMenu()">Cancel</div>
+      </div>
+    </div>
+
+    <div
+      id="reactionInfoModal"
+      class="reaction-info-modal"
+      style="display: none"
+    >
+      <div class="rim-box">
+        <div class="rim-header">
+          <span id="rimEmoji" style="font-size: 26px"></span>
+          <button onclick="closeReactionInfo()" class="close-btn">✕</button>
+        </div>
+
+        <div id="rimList" class="rim-list"></div>
       </div>
     </div>
 
