@@ -15,7 +15,9 @@ window.onload = async () => {
     try {
       const user = JSON.parse(stored);
       // Verify user still exists (optional, but good practice)
-      const freshUser = await client.query("users:getUserById", { id: user._id });
+      const freshUser = await client.query("users:getUserById", {
+        id: user._id,
+      });
       if (freshUser) {
         currentUser = freshUser;
         afterLogin();
@@ -30,27 +32,32 @@ window.onload = async () => {
 };
 
 // helpers
-function q(id) { return document.getElementById(id); }
+function q(id) {
+  return document.getElementById(id);
+}
 
 function showScreen(id) {
-  ["screen-register","screen-login","screen-list"].forEach(s=>{
-    const el = q(s); if(!el) return;
+  ["screen-register", "screen-login", "screen-list"].forEach((s) => {
+    const el = q(s);
+    if (!el) return;
     el.classList.remove("active");
     el.style.display = "none";
   });
   q(id).style.display = "flex"; // Changed to flex to match CSS
   q(id).classList.add("active");
 
-  if(!currentUser || !activeOtherId) q("chatPanel").classList.remove("open");
+  if (!currentUser || !activeOtherId) q("chatPanel").classList.remove("open");
 }
 
-function showChatPanelUI() { q("chatPanel").classList.add("open"); }
+function showChatPanelUI() {
+  q("chatPanel").classList.add("open");
+}
 function closeChat() {
   q("chatPanel").classList.remove("open");
-  if(chatSubStop && typeof chatSubStop === 'function') {
+  if (chatSubStop && typeof chatSubStop === "function") {
     try {
       chatSubStop();
-    } catch(e) {
+    } catch (e) {
       console.error("Error unsubscribing from chat:", e);
     }
   }
@@ -59,10 +66,10 @@ function closeChat() {
 }
 
 // ========== IMAGE COMPRESSION ==========
-async function compressImage(file, maxWidth=420, quality=0.72){
-  return new Promise((resolve,reject)=>{
+async function compressImage(file, maxWidth = 420, quality = 0.72) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
         const scale = Math.min(1, maxWidth / img.width);
@@ -70,7 +77,7 @@ async function compressImage(file, maxWidth=420, quality=0.72){
         const h = Math.round(img.height * scale);
 
         const canvas = document.createElement("canvas");
-        canvas.width = w; 
+        canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, w, h);
@@ -88,25 +95,30 @@ async function compressImage(file, maxWidth=420, quality=0.72){
 }
 
 // ========== PROFILE HELPERS ==========
-async function getProfile(userId){
-  if(profileCache[userId]) return profileCache[userId];
-  const p = await client.query("users:getUserById",{id:userId});
-  if(p && p.profilePic){
-    try { p.avatarUrl = await client.mutation("storage:getPFPUrl", {storageId:p.profilePic}); }
-    catch {}
+async function getProfile(userId) {
+  if (profileCache[userId]) return profileCache[userId];
+  const p = await client.query("users:getUserById", { id: userId });
+  if (p && p.profilePic) {
+    try {
+      p.avatarUrl = await client.mutation("storage:getPFPUrl", {
+        storageId: p.profilePic,
+      });
+    } catch {}
   }
   profileCache[userId] = p;
   return p;
 }
 
-async function setMyProfileUI(){
-  if(!currentUser) return;
-  if(q("meNameDisplay")) q("meNameDisplay").innerText = currentUser.name;
-  if(q("meUser")) q("meUser").innerText = "@"+currentUser.username;
+async function setMyProfileUI() {
+  if (!currentUser) return;
+  if (q("meNameDisplay")) q("meNameDisplay").innerText = currentUser.name;
+  if (q("meUser")) q("meUser").innerText = "@" + currentUser.username;
 
-  if(currentUser.profilePic){
+  if (currentUser.profilePic) {
     try {
-      const url = await client.mutation("storage:getPFPUrl",{storageId:currentUser.profilePic});
+      const url = await client.mutation("storage:getPFPUrl", {
+        storageId: currentUser.profilePic,
+      });
       q("meAvatarImg").src = url;
       q("meAvatarImg").style.display = "block";
     } catch {}
@@ -119,19 +131,19 @@ async function setMyProfileUI(){
 let pendingRegistration = null;
 
 // STEP 1 — Request OTP
-async function onRegister(){
+async function onRegister() {
   const name = q("regName").value.trim();
   const username = q("regUser").value.trim();
   const email = q("regEmail").value.trim();
   const password = q("regPass").value;
 
-  if(!name || !username || !email || !password)
+  if (!name || !username || !email || !password)
     return alert("Please fill all fields");
 
   try {
     const otp = await client.mutation("otp:requestOtp", {
       email,
-      purpose: "register"
+      purpose: "register",
     });
 
     // send OTP to your Gmail backend (wrap in try/catch so UI flow remains predictable)
@@ -139,11 +151,11 @@ async function onRegister(){
       const res = await fetch("https://chatmail-tan.vercel.app/api/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp })
+        body: JSON.stringify({ email, otp }),
       });
       // optional: check response
       const j = await res.json();
-      if(!j.ok) console.warn("OTP mailer reported failure:", j);
+      if (!j.ok) console.warn("OTP mailer reported failure:", j);
     } catch (e) {
       console.warn("Failed to call OTP mailer:", e);
       // continue anyway (user will still have OTP in DB)
@@ -151,29 +163,28 @@ async function onRegister(){
 
     pendingRegistration = { name, username, email, password };
     openOtpModal(email);
-
-  } catch(err){
+  } catch (err) {
     alert(err.message || "Failed to send OTP");
   }
 }
 
 // OTP Modal Logic
-function openOtpModal(email){
+function openOtpModal(email) {
   q("otpModalOverlay").style.display = "flex";
   q("otpEmailDisplay").innerText = email;
 
   const inputs = document.querySelectorAll(".otp-input");
-  inputs.forEach(i=>i.value="");
-  
+  inputs.forEach((i) => (i.value = ""));
+
   setupOtpAutoFocus();
-  
+
   // Focus first input
-  if(inputs[0]) inputs[0].focus();
-  
+  if (inputs[0]) inputs[0].focus();
+
   startOtpTimer();
 }
 
-function closeOtpModal(){
+function closeOtpModal() {
   q("otpModalOverlay").style.display = "none";
   // clear timer if any
   if (otpInterval) {
@@ -186,7 +197,7 @@ function closeOtpModal(){
 let otpTime = 30;
 let otpInterval = null;
 
-function startOtpTimer(){
+function startOtpTimer() {
   // prevent multiple intervals
   if (otpInterval) {
     clearInterval(otpInterval);
@@ -194,39 +205,42 @@ function startOtpTimer(){
   }
 
   otpTime = 30;
-  if(q("otpResendBtn")) q("otpResendBtn").disabled = true;
+  if (q("otpResendBtn")) q("otpResendBtn").disabled = true;
 
-  otpInterval = setInterval(()=>{
+  otpInterval = setInterval(() => {
     otpTime--;
-    if(q("otpTimer")) q("otpTimer").innerText = `Resend in ${otpTime}s`;
+    if (q("otpTimer")) q("otpTimer").innerText = `Resend in ${otpTime}s`;
 
-    if(otpTime <= 0){
+    if (otpTime <= 0) {
       clearInterval(otpInterval);
       otpInterval = null;
-      if(q("otpTimer")) q("otpTimer").innerText = "";
-      if(q("otpResendBtn")) q("otpResendBtn").disabled = false;
+      if (q("otpTimer")) q("otpTimer").innerText = "";
+      if (q("otpResendBtn")) q("otpResendBtn").disabled = false;
     }
-  },1000);
+  }, 1000);
 }
 
 // resend OTP
-if(q("otpResendBtn")) {
-  q("otpResendBtn").onclick = async ()=>{
-    if(!pendingRegistration) return;
+if (q("otpResendBtn")) {
+  q("otpResendBtn").onclick = async () => {
+    if (!pendingRegistration) return;
     try {
-      const otp = await client.mutation("otp:requestOtp",{
+      const otp = await client.mutation("otp:requestOtp", {
         email: pendingRegistration.email,
-        purpose: "register"
+        purpose: "register",
       });
 
       try {
-        const res = await fetch("https://chatmail-tan.vercel.app/api/send-otp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: pendingRegistration.email, otp })
-        });
+        const res = await fetch(
+          "https://chatmail-tan.vercel.app/api/send-otp",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: pendingRegistration.email, otp }),
+          }
+        );
         const j = await res.json();
-        if(!j.ok) console.warn("OTP mailer reported failure on resend:", j);
+        if (!j.ok) console.warn("OTP mailer reported failure on resend:", j);
       } catch (e) {
         console.warn("Failed to call OTP mailer on resend:", e);
       }
@@ -239,34 +253,32 @@ if(q("otpResendBtn")) {
 }
 
 // verify OTP
-async function verifyOtp(){
+async function verifyOtp() {
   // ensure we have pending registration context
-  if(!pendingRegistration || !pendingRegistration.email) {
+  if (!pendingRegistration || !pendingRegistration.email) {
     return alert("No pending registration — please request OTP first");
   }
 
   const boxes = [...document.querySelectorAll(".otp-input")];
-  const otp = boxes.map(b => b.value.trim()).join("");
+  const otp = boxes.map((b) => b.value.trim()).join("");
 
-  if(otp.length !== 6)
-    return alert("Enter full 6-digit OTP");
+  if (otp.length !== 6) return alert("Enter full 6-digit OTP");
 
   try {
     const ok = await client.query("otp:verifyOtp", {
       email: pendingRegistration.email,
       otp,
-      purpose: "register"
+      purpose: "register",
     });
 
-    if(!ok)
-      return alert("Invalid or expired OTP");
+    if (!ok) return alert("Invalid or expired OTP");
 
     // OTP SUCCESS → Create user
-    const created = await client.mutation("users:register",{
+    const created = await client.mutation("users:register", {
       name: pendingRegistration.name,
       username: pendingRegistration.username,
       email: pendingRegistration.email,
-      password: pendingRegistration.password
+      password: pendingRegistration.password,
     });
 
     currentUser = created;
@@ -276,63 +288,62 @@ async function verifyOtp(){
     pendingRegistration = null;
     closeOtpModal();
     openPfpModal();
-
-  } catch(e){
+  } catch (e) {
     alert(e.message || "Verification failed");
   }
 }
 
 function setupOtpAutoFocus() {
   const inputs = document.querySelectorAll(".otp-input");
-  
+
   inputs.forEach((input, index) => {
     // Remove any existing listeners to prevent duplicates
     input.replaceWith(input.cloneNode(true));
   });
-  
+
   // Re-query after cloning
   const freshInputs = document.querySelectorAll(".otp-input");
-  
+
   freshInputs.forEach((input, index) => {
     input.addEventListener("input", (e) => {
       const value = e.target.value;
-      
+
       // Only allow numbers
       if (value && !/^\d$/.test(value)) {
         e.target.value = "";
         return;
       }
-      
+
       // Move to next input if value entered
       if (value && index < freshInputs.length - 1) {
         freshInputs[index + 1].focus();
       }
     });
-    
+
     input.addEventListener("keydown", (e) => {
       // Handle backspace - move to previous input if current is empty
       if (e.key === "Backspace" && !e.target.value && index > 0) {
         freshInputs[index - 1].focus();
       }
-      
+
       // Handle left arrow
       if (e.key === "ArrowLeft" && index > 0) {
         e.preventDefault();
         freshInputs[index - 1].focus();
       }
-      
+
       // Handle right arrow
       if (e.key === "ArrowRight" && index < freshInputs.length - 1) {
         e.preventDefault();
         freshInputs[index + 1].focus();
       }
     });
-    
+
     // Handle paste
     input.addEventListener("paste", (e) => {
       e.preventDefault();
       const pastedData = e.clipboardData.getData("text").trim();
-      
+
       // Only process if it's 6 digits
       if (/^\d{6}$/.test(pastedData)) {
         pastedData.split("").forEach((char, i) => {
@@ -348,61 +359,70 @@ function setupOtpAutoFocus() {
 }
 
 // ========== LOGIN ==========
-async function onLogin(){
+async function onLogin() {
   const username = q("loginUser").value.trim();
   const pass = q("loginPass").value;
-  if(!username || !pass) return alert("Provide credentials");
+  if (!username || !pass) return alert("Provide credentials");
 
-  try{
-    const u = await client.mutation("users:login",{username,password:pass});
-    currentUser = await client.query("users:getUserById",{id:u._id});
-    
+  try {
+    const u = await client.mutation("users:login", {
+      username,
+      password: pass,
+    });
+    currentUser = await client.query("users:getUserById", { id: u._id });
+
     localStorage.setItem("mindmate_user", JSON.stringify(currentUser));
-    
+
     afterLogin();
-  }catch(e){
+  } catch (e) {
     alert(e.message);
   }
 }
 
-function afterLogin(){
+function afterLogin() {
   showScreen("screen-list");
   setMyProfileUI();
   startChatListSubscription();
 }
 
 // ========== LOGOUT ==========
-function logout(){
+function logout() {
   currentUser = null;
   activeOtherId = null;
   localStorage.removeItem("mindmate_user");
-  
-  if(chatSubStop && typeof chatSubStop === 'function') {
+
+  if (chatSubStop && typeof chatSubStop === "function") {
     try {
       chatSubStop();
-    } catch(e) {
+    } catch (e) {
       console.error("Error unsubscribing from chat:", e);
     }
   }
-  if(listSubStop && typeof listSubStop === 'function') {
+  if (listSubStop && typeof listSubStop === "function") {
     try {
       listSubStop();
-    } catch(e) {
+    } catch (e) {
       console.error("Error unsubscribing from list:", e);
     }
   }
   chatSubStop = null;
   listSubStop = null;
-  
+
   q("threadList").innerHTML = "";
   q("messages").innerHTML = "";
   showRegister();
 }
 
 // ========== UI navigate ==========
-function showRegister(){ showScreen("screen-register"); }
-function showLogin(){ showScreen("screen-login"); }
-function showList(){ showScreen("screen-list"); }
+function showRegister() {
+  showScreen("screen-register");
+}
+function showLogin() {
+  showScreen("screen-login");
+}
+function showList() {
+  showScreen("screen-list");
+}
 
 // ========== SEARCH ==========
 
@@ -426,7 +446,7 @@ let searchDebounce = null;
 function onSearchInput(e) {
   clearTimeout(searchDebounce);
   const val = e.target.value.trim();
-  
+
   if (!val) {
     q("searchResults").innerHTML = "";
     return;
@@ -440,7 +460,7 @@ async function performSearch(username) {
     // Note: The backend currently only supports exact match via 'searchUser' which returns a single user.
     // If you have a fuzzy search, use that. For now, we use the existing query.
     const u = await client.query("users:searchUser", { username });
-    
+
     const container = q("searchResults");
     container.innerHTML = "";
 
@@ -450,8 +470,8 @@ async function performSearch(username) {
     }
 
     if (currentUser && u._id === currentUser._id) {
-       container.innerHTML = `<div style="text-align:center; color:#666; margin-top:20px;">That's you!</div>`;
-       return;
+      container.innerHTML = `<div style="text-align:center; color:#666; margin-top:20px;">That's you!</div>`;
+      return;
     }
 
     // Render result item
@@ -460,14 +480,17 @@ async function performSearch(username) {
     item.onclick = () => startChatWithSearch(u);
 
     let avatarHtml = `<div class="avatar-circle" style="width:40px; height:40px; background:#333; display:grid; place-items:center;">${u.name[0]}</div>`;
-    
+
     if (u.profilePic) {
       // We need to fetch the URL. Since this is async inside a sync render, we'll load it after.
       // Or we can just use the placeholder and let the click handle the full load.
       // Better: fetch it now.
-      client.mutation("storage:getPFPUrl", { storageId: u.profilePic }).then(url => {
-        item.querySelector(".avatar-circle").innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
-      });
+      client
+        .mutation("storage:getPFPUrl", { storageId: u.profilePic })
+        .then((url) => {
+          item.querySelector(".avatar-circle").innerHTML =
+            `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
+        });
     }
 
     item.innerHTML = `
@@ -480,58 +503,60 @@ async function performSearch(username) {
     `;
 
     container.appendChild(item);
-
   } catch (e) {
     console.error(e);
   }
 }
 
-async function startChatWithSearch(userObj){
-  if(!userObj) return;
+async function startChatWithSearch(userObj) {
+  if (!userObj) return;
   await openChat(userObj._id);
   closeSearchPanel();
 }
 
 // ========== OPEN CHAT ==========
-async function openChat(otherUserId){
-  if(!currentUser) return alert("Login first");
+async function openChat(otherUserId) {
+  if (!currentUser) return alert("Login first");
 
   activeOtherId = otherUserId;
 
   const other = await getProfile(otherUserId);
 
   q("chatName").innerText = other?.name || "Unknown";
-  if(q("chatUser")) q("chatUser").innerText = "@"+(other?.username || "");
+  if (q("chatUser")) q("chatUser").innerText = "@" + (other?.username || "");
 
-  if(other?.avatarUrl){
+  if (other?.avatarUrl) {
     q("chatAvatarImg").src = other.avatarUrl;
     q("chatAvatarImg").style.display = "block";
-  } else q("chatAvatarImg").style.display="none";
+  } else q("chatAvatarImg").style.display = "none";
 
-  try{
-    await client.mutation("privateChat:markThreadRead",{userId:currentUser._id, otherId:otherUserId});
-  }catch{}
+  try {
+    await client.mutation("privateChat:markThreadRead", {
+      userId: currentUser._id,
+      otherId: otherUserId,
+    });
+  } catch {}
 
   showChatPanelUI();
 
-  if(chatSubStop && typeof chatSubStop === 'function') {
+  if (chatSubStop && typeof chatSubStop === "function") {
     try {
       chatSubStop();
-    } catch(e) {
+    } catch (e) {
       console.error("Error unsubscribing from previous chat:", e);
     }
   }
-  
+
   chatSubStop = client.onUpdate(
     "privateChat:getPrivateMessages",
-    {senderId:currentUser._id, receiverId:otherUserId},
-    (msgs)=>{
+    { senderId: currentUser._id, receiverId: otherUserId },
+    (msgs) => {
       const box = q("messages");
       box.innerHTML = "";
-      
-      msgs.forEach(m=>{
+
+      msgs.forEach((m) => {
         const b = document.createElement("div");
-        b.className = "bubble " + (m.senderId===currentUser._id ? "me" : "");
+        b.className = "bubble " + (m.senderId === currentUser._id ? "me" : "");
         b.innerText = m.body;
         const time = document.createElement("div");
         time.className = "meta";
@@ -539,7 +564,10 @@ async function openChat(otherUserId){
         time.style.opacity = "0.6";
         time.style.marginTop = "4px";
         time.style.textAlign = "right";
-        time.innerText = new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        time.innerText = new Date(m.timestamp).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
         b.appendChild(time);
         box.appendChild(b);
       });
@@ -549,25 +577,25 @@ async function openChat(otherUserId){
 }
 
 // ========== SEND MESSAGE ==========
-async function onSend(){
+async function onSend() {
   const txt = q("msgInput").value.trim();
-  if(!txt || !activeOtherId) return;
+  if (!txt || !activeOtherId) return;
 
-  await client.mutation("privateChat:sendPrivateMessage",{
-    senderId:currentUser._id,
-    receiverId:activeOtherId,
-    body:txt
+  await client.mutation("privateChat:sendPrivateMessage", {
+    senderId: currentUser._id,
+    receiverId: activeOtherId,
+    body: txt,
   });
 
   q("msgInput").value = "";
 }
 
-// showRegister(); 
+// showRegister();
 
 // background parallax
-document.addEventListener("mousemove",e=>{
-  const x = (e.clientX/window.innerWidth - 0.5) * 10;
-  const y = (e.clientY/window.innerHeight - 0.5) * 10;
+document.addEventListener("mousemove", (e) => {
+  const x = (e.clientX / window.innerWidth - 0.5) * 10;
+  const y = (e.clientY / window.innerHeight - 0.5) * 10;
   document.body.style.backgroundPosition = `calc(50% + ${x}px) calc(50% + ${y}px)`;
 });
 
@@ -575,46 +603,52 @@ document.addEventListener("mousemove",e=>{
 let pfpFile = null;
 let pfpZoom = 1;
 
-function openPfpModal(){
-  q("pfpModalOverlay").style.display="flex";
-  q("pfpPreviewImg").style.display="none";
-  q("pfpFile").value="";
-  if(q("pfpZoom")) q("pfpZoom").value=1;
-  pfpFile=null;
-  pfpZoom=1;
-  if(q("pfpPreviewImg")) q("pfpPreviewImg").style.transform = "scale(1)";
+function openPfpModal() {
+  q("pfpModalOverlay").style.display = "flex";
+  q("pfpPreviewImg").style.display = "none";
+  q("pfpFile").value = "";
+  if (q("pfpZoom")) q("pfpZoom").value = 1;
+  pfpFile = null;
+  pfpZoom = 1;
+  if (q("pfpPreviewImg")) q("pfpPreviewImg").style.transform = "scale(1)";
 }
 
-async function savePfp(){
-  if(!pfpFile) return skipPfp();
+async function savePfp() {
+  if (!pfpFile) return skipPfp();
 
-  try{
-    const dataUrl = await compressImage(pfpFile,800,0.8);
+  try {
+    const dataUrl = await compressImage(pfpFile, 800, 0.8);
     const binary = atob(dataUrl.split(",")[1]);
     const bytes = new Uint8Array(binary.length);
-    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-    const blob = new Blob([bytes],{type:pfpFile.type || "image/jpeg"});
+    const blob = new Blob([bytes], { type: pfpFile.type || "image/jpeg" });
     const uploadUrl = await client.mutation("storage:getUploadUrl");
 
-    const res = await fetch(uploadUrl,{
-      method:"POST", headers:{"Content-Type":blob.type}, body:blob
+    const res = await fetch(uploadUrl, {
+      method: "POST",
+      headers: { "Content-Type": blob.type },
+      body: blob,
     });
-    const {storageId} = await res.json();
+    const { storageId } = await res.json();
 
     // make sure userId is provided
-    if(!currentUser || !currentUser._id) {
+    if (!currentUser || !currentUser._id) {
       throw new Error("No currentUser set – cannot save PFP");
     }
 
-    await client.mutation("storage:savePFP",{userId:currentUser._id, storageId});
-    currentUser = await client.query("users:getUserById",{id:currentUser._id});
+    await client.mutation("storage:savePFP", {
+      userId: currentUser._id,
+      storageId,
+    });
+    currentUser = await client.query("users:getUserById", {
+      id: currentUser._id,
+    });
     setMyProfileUI();
 
-    q("pfpModalOverlay").style.display="none";
+    q("pfpModalOverlay").style.display = "none";
     afterLogin();
-
-  }catch(e){
+  } catch (e) {
     alert("Failed to upload picture: " + (e.message || e));
   }
 }
@@ -624,81 +658,90 @@ function skipPfp() {
   afterLogin();
 }
 
-async function openMyProfile(){
-  if(!currentUser) return;
+async function openMyProfile() {
+  if (!currentUser) return;
   profileIsOwner = true;
   await fillProfileModal(currentUser, true);
   q("profileModalOverlay").style.display = "flex";
-  q("profileModalOverlay").setAttribute("aria-hidden","false");
+  q("profileModalOverlay").setAttribute("aria-hidden", "false");
 }
 
-async function openOtherProfile(userId){
+async function openOtherProfile(userId) {
   // fetch public profile
   const u = await client.query("users:getPublicProfile", { userId });
-  if(!u) return alert("User not found");
-  profileIsOwner = (currentUser && currentUser._id === userId);
+  if (!u) return alert("User not found");
+  profileIsOwner = currentUser && currentUser._id === userId;
   await fillProfileModal(u, profileIsOwner);
   q("profileModalOverlay").style.display = "flex";
-  q("profileModalOverlay").setAttribute("aria-hidden","false");
+  q("profileModalOverlay").setAttribute("aria-hidden", "false");
 }
 
-function closeProfileModal(){
+function closeProfileModal() {
   q("profileModalOverlay").style.display = "none";
-  q("profileModalOverlay").setAttribute("aria-hidden","true");
+  q("profileModalOverlay").setAttribute("aria-hidden", "true");
 }
 
-async function fillProfileModal(userObj, editable){
+async function fillProfileModal(userObj, editable) {
   // userObj may be currentUser or public
   q("profileNameDisplay").innerText = userObj.name || "";
-  if(q("profileUsernameDisplay")) q("profileUsernameDisplay").innerText = "@"+(userObj.username || "");
-  if(userObj.profilePic){
-    try{
-      const url = await client.mutation("storage:getPFPUrl", { storageId: userObj.profilePic });
+  if (q("profileUsernameDisplay"))
+    q("profileUsernameDisplay").innerText = "@" + (userObj.username || "");
+  if (userObj.profilePic) {
+    try {
+      const url = await client.mutation("storage:getPFPUrl", {
+        storageId: userObj.profilePic,
+      });
       q("profileAvatarImg").src = url;
       q("profileAvatarImg").style.display = "block";
-    }catch(e){
+    } catch (e) {
       q("profileAvatarImg").style.display = "none";
     }
   } else {
     q("profileAvatarImg").style.display = "none";
   }
 
-  if(editable){
+  if (editable) {
     q("profileEditArea").style.display = "block";
-    if(q("profileReadOnlyAbout")) q("profileReadOnlyAbout").style.display = "none";
+    if (q("profileReadOnlyAbout"))
+      q("profileReadOnlyAbout").style.display = "none";
     // fill inputs
     q("editName").value = userObj.name || "";
     q("editUsername").value = userObj.username || "";
-    if(q("editAbout")) q("editAbout").value = userObj.about || "";
+    if (q("editAbout")) q("editAbout").value = userObj.about || "";
     // attach live checking on username
-    q("editUsername").oninput = async ()=>{
+    q("editUsername").oninput = async () => {
       const val = q("editUsername").value.trim();
-      if(!val) { if(q("usernameStatus")) q("usernameStatus").innerText = ""; return; }
-      try{
-        const available = await client.query("users:checkUsername", { username: val });
-        if(available || val === (currentUser && currentUser.username)){
-          if(q("usernameStatus")) {
+      if (!val) {
+        if (q("usernameStatus")) q("usernameStatus").innerText = "";
+        return;
+      }
+      try {
+        const available = await client.query("users:checkUsername", {
+          username: val,
+        });
+        if (available || val === (currentUser && currentUser.username)) {
+          if (q("usernameStatus")) {
             q("usernameStatus").innerText = "Available ✔";
             q("usernameStatus").className = "status-text status-available";
           }
         } else {
-          if(q("usernameStatus")) {
+          if (q("usernameStatus")) {
             q("usernameStatus").innerText = "Unavailable ✖";
             q("usernameStatus").className = "status-text status-unavailable";
           }
         }
-      }catch(e){
-        if(q("usernameStatus")) q("usernameStatus").innerText = "";
+      } catch (e) {
+        if (q("usernameStatus")) q("usernameStatus").innerText = "";
       }
     };
     // wire upload file
-    if(q("editPfpFile")) {
-      q("editPfpFile").onchange = (ev)=>{
+    if (q("editPfpFile")) {
+      q("editPfpFile").onchange = (ev) => {
         const f = ev.target.files && ev.target.files[0];
-        if(!f) return;
+        if (!f) return;
         // show preview in profile avatar
         const r = new FileReader();
-        r.onload = ()=>{
+        r.onload = () => {
           q("profileAvatarImg").src = r.result;
           q("profileAvatarImg").style.display = "block";
         };
@@ -707,40 +750,43 @@ async function fillProfileModal(userObj, editable){
     }
   } else {
     q("profileEditArea").style.display = "none";
-    if(q("profileReadOnlyAbout")) {
+    if (q("profileReadOnlyAbout")) {
       q("profileReadOnlyAbout").style.display = "block";
       q("profileReadOnlyAbout").innerText = userObj.about || "";
     }
   }
 }
 
-async function saveProfile(){
-  if(!currentUser) return;
+async function saveProfile() {
+  if (!currentUser) return;
   const name = q("editName").value.trim();
   const username = q("editUsername").value.trim();
   const about = q("editAbout") ? q("editAbout").value : "";
 
   // validation: username availability
-  try{
-    const available = await client.query("users:isUsernameAvailable", { username });
-    if(!available && username !== currentUser.username){
+  try {
+    const available = await client.query("users:isUsernameAvailable", {
+      username,
+    });
+    if (!available && username !== currentUser.username) {
       alert("Username is taken");
       return;
     }
-  }catch(e){
+  } catch (e) {
     // ignore
   }
 
-  try{
+  try {
     await client.mutation("users:updateProfile", {
       userId: currentUser._id,
       name,
       username,
-      about
+      about,
     });
 
     // if new pfp file selected
-    const pf = q("editPfpFile") && q("editPfpFile").files && q("editPfpFile").files[0];
+    const pf =
+      q("editPfpFile") && q("editPfpFile").files && q("editPfpFile").files[0];
     if (pf) {
       const dataUrl = await compressImage(pf, 800, 0.8);
       const binary = atob(dataUrl.split(",")[1]);
@@ -759,7 +805,7 @@ async function saveProfile(){
       const { storageId } = await result.json();
 
       // ensure currentUser exists
-      if(!currentUser || !currentUser._id) {
+      if (!currentUser || !currentUser._id) {
         throw new Error("No currentUser set – cannot save PFP");
       }
 
@@ -769,141 +815,151 @@ async function saveProfile(){
       });
     }
 
-
     // refresh current user
-    currentUser = await client.query("users:getUserById", { id: currentUser._id });
+    currentUser = await client.query("users:getUserById", {
+      id: currentUser._id,
+    });
     setMyProfileUI();
     closeProfileModal();
-  }catch(err){
+  } catch (err) {
     alert(err.message || String(err));
   }
 }
 
-async function onRemovePfp(){
-  if(!currentUser) return;
-  if(!confirm("Remove profile picture?")) return;
-  try{
+async function onRemovePfp() {
+  if (!currentUser) return;
+  if (!confirm("Remove profile picture?")) return;
+  try {
     await client.mutation("users:removePFP", { userId: currentUser._id });
-    currentUser = await client.query("users:getUserById", { id: currentUser._id });
+    currentUser = await client.query("users:getUserById", {
+      id: currentUser._id,
+    });
     setMyProfileUI();
     // update modal UI
     q("profileAvatarImg").style.display = "none";
-  }catch(e){
+  } catch (e) {
     alert("Failed to remove");
   }
 }
 
 // ---------- helper to open profile when clicking avatar in header or thread list ----------
 // make header avatar clickable to open own profile
-if(q("meAvatar")) q("meAvatar").addEventListener("click", ()=> openMyProfile());
+if (q("meAvatar"))
+  q("meAvatar").addEventListener("click", () => openMyProfile());
 // make chat header avatar clickable (view other's profile)
-if(q("chatAvatar")) q("chatAvatar").addEventListener("click", async ()=>{
-  if(!activeOtherId) return;
-  await openOtherProfile(activeOtherId);
-});
+if (q("chatAvatar"))
+  q("chatAvatar").addEventListener("click", async () => {
+    if (!activeOtherId) return;
+    await openOtherProfile(activeOtherId);
+  });
 
-window.LG = {client, getProfile, openChat, logout};
+window.LG = { client, getProfile, openChat, logout };
 
 // ========== CHAT LIST SUBSCRIPTION ==========
-function startChatListSubscription(){
-  if(listSubStop && typeof listSubStop === 'function') {
+function startChatListSubscription() {
+  if (listSubStop && typeof listSubStop === "function") {
     try {
       listSubStop();
-    } catch(e) {
+    } catch (e) {
       console.error("Error unsubscribing from list:", e);
     }
   }
 
-  listSubStop = client.onUpdate("chatList:getChatList",{userId:currentUser._id}, async (threads)=>{
-    const container = q("threadList");
-    container.innerHTML = "";
+  listSubStop = client.onUpdate(
+    "chatList:getChatList",
+    { userId: currentUser._id },
+    async (threads) => {
+      const container = q("threadList");
+      container.innerHTML = "";
 
-    if(!threads || threads.length===0){
-      container.innerHTML = "<div style='color:rgba(255,255,255,0.6); text-align:center; padding:20px;'>No chats yet</div>";
-      return;
-    }
-
-    for(const t of threads){
-      const other = await getProfile(t.otherUserId);
-
-      const row = document.createElement("div");
-      row.className = "thread";
-      row.onclick = ()=>openChat(t.otherUserId,t.threadId);
-
-      const left = document.createElement("div");
-      left.className = "left";
-      left.style.display = "flex";
-      left.style.alignItems = "center";
-      left.style.gap = "12px";
-
-      const avatar = document.createElement("div");
-      avatar.className = "avatar-circle"; // Reused existing class
-      avatar.style.width = "40px";
-      avatar.style.height = "40px";
-      
-      if(other && other.avatarUrl){
-        const img = document.createElement("img");
-        img.src = other.avatarUrl;
-        avatar.appendChild(img);
-      } else {
-        avatar.innerText = other ? other.name[0].toUpperCase() : "?";
-        avatar.style.display = "grid";
-        avatar.style.placeItems = "center";
-        avatar.style.background = "#333";
+      if (!threads || threads.length === 0) {
+        container.innerHTML =
+          "<div style='color:rgba(255,255,255,0.6); text-align:center; padding:20px;'>No chats yet</div>";
+        return;
       }
 
-      left.appendChild(avatar);
+      for (const t of threads) {
+        const other = await getProfile(t.otherUserId);
 
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      meta.style.display = "flex";
-      meta.style.flexDirection = "column";
+        const row = document.createElement("div");
+        row.className = "thread";
+        row.onclick = () => openChat(t.otherUserId, t.threadId);
 
-      const name = document.createElement("div");
-      name.className = "name";
-      name.innerText = other ? other.name : "Unknown";
+        const left = document.createElement("div");
+        left.className = "left";
+        left.style.display = "flex";
+        left.style.alignItems = "center";
+        left.style.gap = "12px";
 
-      const last = document.createElement("div");
-      last.className = "last";
-      last.style.fontSize = "12px";
-      last.style.color = "#888";
-      last.innerText = t.lastMsg || "";
+        const avatar = document.createElement("div");
+        avatar.className = "avatar-circle"; // Reused existing class
+        avatar.style.width = "40px";
+        avatar.style.height = "40px";
 
-      meta.appendChild(name);
-      meta.appendChild(last);
-      
-      left.appendChild(meta); // Append meta to left group
+        if (other && other.avatarUrl) {
+          const img = document.createElement("img");
+          img.src = other.avatarUrl;
+          avatar.appendChild(img);
+        } else {
+          avatar.innerText = other ? other.name[0].toUpperCase() : "?";
+          avatar.style.display = "grid";
+          avatar.style.placeItems = "center";
+          avatar.style.background = "#333";
+        }
 
-      const right = document.createElement("div");
-      if(t.unread){
-        const b = document.createElement("div");
-        b.className = "badge";
-        b.innerText = t.unread;
-        b.style.background = "var(--accent-green)";
-        b.style.color = "black";
-        b.style.padding = "2px 8px";
-        b.style.borderRadius = "10px";
-        b.style.fontSize = "12px";
-        right.appendChild(b);
+        left.appendChild(avatar);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.style.display = "flex";
+        meta.style.flexDirection = "column";
+
+        const name = document.createElement("div");
+        name.className = "name";
+        name.innerText = other ? other.name : "Unknown";
+
+        const last = document.createElement("div");
+        last.className = "last";
+        last.style.fontSize = "12px";
+        last.style.color = "#888";
+        last.innerText = t.lastMsg || "";
+
+        meta.appendChild(name);
+        meta.appendChild(last);
+
+        left.appendChild(meta); // Append meta to left group
+
+        const right = document.createElement("div");
+        if (t.unread) {
+          const b = document.createElement("div");
+          b.className = "badge";
+          b.innerText = t.unread;
+          b.style.background = "var(--accent-green)";
+          b.style.color = "black";
+          b.style.padding = "2px 8px";
+          b.style.borderRadius = "10px";
+          b.style.fontSize = "12px";
+          right.appendChild(b);
+        }
+
+        row.appendChild(left);
+        row.appendChild(right);
+
+        container.appendChild(row);
       }
-
-      row.appendChild(left);
-      row.appendChild(right);
-
-      container.appendChild(row);
     }
-  });
+  );
 }
 
-if(q("pfpFile")) {
-  q("pfpFile").onchange = function(e) {
+if (q("pfpFile")) {
+  q("pfpFile").onchange = function (e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
-    
+
     pfpFile = f;
-    
+
     const reader = new FileReader();
-    reader.onload = function(evt) {
+    reader.onload = function (evt) {
       const img = q("pfpPreviewImg");
       img.src = evt.target.result;
       img.style.display = "block";
@@ -913,11 +969,11 @@ if(q("pfpFile")) {
   };
 }
 
-if(q("pfpZoom")) {
-  q("pfpZoom").oninput = e=>{
+if (q("pfpZoom")) {
+  q("pfpZoom").oninput = (e) => {
     pfpZoom = parseFloat(e.target.value);
     const img = q("pfpPreviewImg");
-    if(img && img.style.display !== "none") {
+    if (img && img.style.display !== "none") {
       img.style.transform = `scale(${pfpZoom})`;
     }
   };

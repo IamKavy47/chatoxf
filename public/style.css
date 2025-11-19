@@ -4,24 +4,26 @@
   --bg-dark: #0a0a0a; /* Darker, more premium background */
   --bg-card: #161616; /* Slightly lighter for cards */
   --bg-input: #202020;
-  --text-primary: #FFFFFF;
-  --text-secondary: #A1A1AA;
-  --accent-green: #D0FD3E;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --accent-green: #d0fd3e;
   --accent-glow: rgba(208, 253, 62, 0.15);
-  --btn-white: #FFFFFF;
+  --btn-white: #ffffff;
   --btn-text: #000000;
-  
+
   --radius-card: 24px;
   --radius-pill: 50px;
   --radius-bubble: 20px;
-  --border-subtle: 1px solid rgba(255,255,255,0.08);
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   background-color: #000; /* Outer void */
   color: var(--text-primary);
   height: 100vh;
@@ -167,7 +169,7 @@ body {
 
 .pill-input:focus {
   background: #2a2a2a;
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .action-buttons {
@@ -233,7 +235,11 @@ body {
   overflow: hidden;
 }
 
-.avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 /* Added styles for user handle */
 .user-handle {
@@ -258,12 +264,14 @@ body {
   font-weight: 600;
   cursor: pointer;
   margin-bottom: 32px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .new-chat-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255,255,255,0.1);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .section-label {
@@ -364,7 +372,8 @@ body {
   cursor: pointer;
 }
 
-.back-btn, .menu-btn {
+.back-btn,
+.menu-btn {
   background: #333;
   border: none;
   width: 40px;
@@ -462,7 +471,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px); /* Premium blur effect */
   display: none;
   /* Centering fix: use flexbox properly */
@@ -479,8 +488,12 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .card-modal {
@@ -490,8 +503,8 @@ body {
   width: 90%;
   max-width: 420px;
   text-align: center;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
   /* Ensure modal doesn't overflow screen on small devices */
@@ -521,7 +534,11 @@ body {
   left: 0;
   right: 0;
   height: 120px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
   z-index: 0;
 }
 
@@ -542,7 +559,7 @@ body {
 }
 
 .modal-header button {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   border: none;
   color: white;
   width: 32px;
@@ -555,7 +572,7 @@ body {
 }
 
 .modal-header button:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .profile-view {
@@ -563,7 +580,9 @@ body {
   z-index: 1;
 }
 
-.card-modal h3 { margin-top: 0; }
+.card-modal h3 {
+  margin-top: 0;
+}
 
 /* Improved OTP input styling and layout */
 .otp-inputs {
@@ -579,8 +598,8 @@ body {
   width: 52px;
   height: 60px;
   border-radius: 12px;
-  background: rgba(255,255,255,0.05);
-  border: 2px solid rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
   color: white;
   text-align: center;
   font-size: 24px;
@@ -590,7 +609,7 @@ body {
 }
 
 .otp-input:focus {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   border-color: var(--accent-green);
   transform: scale(1.05);
 }
@@ -606,8 +625,8 @@ body {
   margin: 0 auto 24px;
   border-radius: 50%;
   overflow: hidden;
-  background: rgba(255,255,255,0.05);
-  border: 3px solid rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.05);
+  border: 3px solid rgba(255, 255, 255, 0.1);
   position: relative;
 }
 
@@ -638,7 +657,7 @@ body {
   display: block;
   background: #222;
   border: 4px solid #121212; /* Cutout effect */
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .big-name {
@@ -652,7 +671,7 @@ body {
   font-size: 14px;
   color: var(--accent-green);
   margin-bottom: 20px;
-  font-family: 'Inter', monospace; /* Tech feel */
+  font-family: "Inter", monospace; /* Tech feel */
 }
 
 .about-text {
@@ -660,10 +679,10 @@ body {
   color: #ccc;
   font-size: 15px;
   line-height: 1.6;
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
   padding: 16px;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* Edit Profile Inputs */
@@ -675,14 +694,14 @@ body {
 }
 
 #profileEditArea .pill-input {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 14px 20px;
   font-size: 15px;
 }
 
 #profileEditArea .pill-input:focus {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   border-color: var(--accent-green);
 }
 
@@ -691,8 +710,12 @@ body {
   margin-bottom: 8px;
   text-align: right;
 }
-.status-available { color: var(--accent-green); }
-.status-unavailable { color: #ff4444; }
+.status-available {
+  color: var(--accent-green);
+}
+.status-unavailable {
+  color: #ff4444;
+}
 
 /* Improved button styling in modals */
 .zoom-slider {
@@ -752,7 +775,9 @@ body {
   color: white;
 }
 
-.hidden { display: none; }
+.hidden {
+  display: none;
+}
 
 .file-input-wrapper {
   margin: 12px 0;
@@ -760,7 +785,9 @@ body {
   justify-content: center;
 }
 
-.danger { color: #ff4444; }
+.danger {
+  color: #ff4444;
+}
 
 /* Search Panel Overlay */
 .search-panel-overlay {
@@ -826,14 +853,19 @@ body {
 
 .search-result-item:hover {
   background: #222;
-  border-color: rgba(255,255,255,0.1);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
-  .app { flex-direction: column; }
-  .left-panel { width: 100%; max-width: none; }
-  
+  .app {
+    flex-direction: column;
+  }
+  .left-panel {
+    width: 100%;
+    max-width: none;
+  }
+
   .chat-panel {
     position: fixed;
     inset: 0;
@@ -841,7 +873,7 @@ body {
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 10;
   }
-  
+
   .chat-panel.open {
     transform: translateX(0);
   }
