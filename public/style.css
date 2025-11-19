@@ -878,3 +878,200 @@ body {
     transform: translateX(0);
   }
 }
+
+/* ================================
+   MESSAGE ACTION SHEET (WhatsApp style)
+   Premium Dark - MindMate Theme
+=================================== */
+
+.msg-action-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  display: none;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 200;
+}
+
+.msg-action-sheet {
+  width: 100%;
+  max-width: 420px;
+  background: #121212;
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  padding: 20px;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* EMOJIS */
+.emoji-row {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.emoji-row span {
+  font-size: 28px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.emoji-row span:hover {
+  transform: scale(1.2);
+}
+
+/* SHEET BUTTONS */
+.sheet-btn {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 14px;
+  border-radius: 16px;
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition:
+    background 0.2s ease,
+    border 0.2s ease;
+}
+
+.sheet-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.sheet-btn.danger {
+  background: rgba(255, 68, 68, 0.08);
+  color: #ff6b6b;
+}
+
+.sheet-btn.danger:hover {
+  background: rgba(255, 68, 68, 0.15);
+}
+
+.sheet-btn.cancel {
+  background: transparent;
+  color: #aaa;
+}
+
+.sheet-btn.cancel:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ============================= */
+/* MESSAGE ACTION SHEET (long press) */
+/* ============================= */
+#actionSheetOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  animation: fadeInSheet 0.15s ease-out;
+}
+
+@keyframes fadeInSheet {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.action-sheet {
+  width: 100%;
+  max-width: 520px;
+  background: #0f0f0f;
+  backdrop-filter: blur(14px);
+  padding: 16px;
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  box-shadow: 0 -20px 40px rgba(0,0,0,0.5);
+}
+
+.action-sheet button {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  color: white;
+  border: none;
+  text-align: left;
+  font-size: 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.action-sheet button:last-child {
+  border-bottom: none;
+}
+
+.btn-danger {
+  color: #ff5f5f !important;
+}
+
+.reaction-quick {
+  padding: 8px 10px;
+  font-size: 22px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+}
+
+/* ============================= */
+/* REPLY PREVIEW ABOVE TYPING BOX */
+/* ============================= */
+#replyBar {
+  background: rgba(255,255,255,0.04);
+  padding: 8px 14px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  backdrop-filter: blur(4px);
+  border-left: 3px solid #6366f1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ============================= */
+/* REPLY INSIDE MESSAGE BUBBLE */
+/* ============================= */
+.reply-preview {
+  background: rgba(255,255,255,0.03);
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border-left: 3px solid rgba(255,255,255,0.15);
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+/* ============================= */
+/* REACTION PILL BELOW MESSAGE */
+/* ============================= */
+.reaction-display {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.reaction-pill {
+  background: rgba(255,255,255,0.08);
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 14px;
+}

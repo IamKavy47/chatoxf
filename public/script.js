@@ -1,5 +1,6 @@
 // ********** CONFIG **********
 const CONVEX_URL = "https://doting-pony-792.convex.cloud";
+// const CONVEX_URL = "https://impartial-dachshund-607.convex.cloud"; 
 const client = new convex.ConvexClient(CONVEX_URL);
 
 // app state
@@ -7,6 +8,9 @@ let currentUser = null;
 let activeOtherId = null;
 let chatSubStop = null;
 let listSubStop = null;
+let currentReplyTarget = null;
+const REACTION_SET = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+
 const profileCache = {};
 
 window.onload = async () => {
@@ -557,20 +561,57 @@ async function openChat(otherUserId) {
       msgs.forEach((m) => {
         const b = document.createElement("div");
         b.className = "bubble " + (m.senderId === currentUser._id ? "me" : "");
-        b.innerText = m.body;
-        const time = document.createElement("div");
-        time.className = "meta";
-        time.style.fontSize = "10px";
-        time.style.opacity = "0.6";
-        time.style.marginTop = "4px";
-        time.style.textAlign = "right";
-        time.innerText = new Date(m.timestamp).toLocaleTimeString([], {
+        b.dataset.msgId = m._id;
+
+        // -------- reply preview inside message --------
+        if (m.replyTo && m.replyTo.body) {
+          const r = document.createElement("div");
+          r.className = "reply-preview";
+          r.innerText = `${m.replyTo.senderName || "Reply"}: ${m.replyTo.body}`;
+          b.appendChild(r);
+        }
+
+        // -------- message body --------
+        const body = document.createElement("div");
+        body.innerText = m.body;
+        b.appendChild(body);
+
+        // -------- reactions --------
+        if (m.reactions && Object.keys(m.reactions).length) {
+          const bar = document.createElement("div");
+          bar.className = "reaction-display";
+
+          const count = {};
+          for (const [uid, emoji] of Object.entries(m.reactions))
+            count[emoji] = (count[emoji] || 0) + 1;
+
+          for (const [emoji, c] of Object.entries(count)) {
+            const pill = document.createElement("div");
+            pill.className = "reaction-pill";
+            pill.innerText = `${emoji} ${c}`;
+            bar.appendChild(pill);
+          }
+          b.appendChild(bar);
+        }
+
+        // timestamp
+        const t = document.createElement("div");
+        t.className = "meta";
+        t.style.fontSize = "10px";
+        t.style.opacity = "0.6";
+        t.style.marginTop = "4px";
+        t.innerText = new Date(m.timestamp).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         });
-        b.appendChild(time);
+        b.appendChild(t);
+
+        // attach long press / right click
+        attachMessageInteractionHandlers(b, m);
+
         box.appendChild(b);
       });
+
       box.scrollTop = box.scrollHeight;
     }
   );
@@ -581,16 +622,162 @@ async function onSend() {
   const txt = q("msgInput").value.trim();
   if (!txt || !activeOtherId) return;
 
-  await client.mutation("privateChat:sendPrivateMessage", {
+  const payload = {
     senderId: currentUser._id,
     receiverId: activeOtherId,
     body: txt,
-  });
+    replyToId: currentReplyTarget ? currentReplyTarget._id : undefined
+  };
+
+  await client.mutation("privateChat:sendPrivateMessage", payload);
 
   q("msgInput").value = "";
+
+  // remove reply bar if present
+  const rb = q("replyBar");
+  if (rb) rb.remove();
+  currentReplyTarget = null;
 }
 
 // showRegister();
+
+// ========== LONG PRESS + ACTION SHEET ==========
+function attachMessageInteractionHandlers(domNode, msg) {
+  let timer = null;
+
+  // mobile long press
+  domNode.addEventListener("touchstart", () => {
+    timer = setTimeout(() => openMessageMenu(domNode, msg), 600);
+  });
+
+  domNode.addEventListener("touchend", () => {
+    if (timer) clearTimeout(timer);
+  });
+
+  // desktop right click
+  domNode.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    openMessageMenu(domNode, msg);
+  });
+}
+
+function openMessageMenu(domNode, msg) {
+  let sheet = document.createElement("div");
+  sheet.id = "actionSheetOverlay";
+
+  const box = document.createElement("div");
+  box.className = "action-sheet";
+
+  // Reply
+  const btnReply = document.createElement("button");
+  btnReply.innerText = "Reply";
+  btnReply.onclick = () => {
+    startReply(msg);
+    sheet.remove();
+  };
+  box.appendChild(btnReply);
+
+  // React options
+  const reactRow = document.createElement("div");
+  reactRow.style.display = "flex";
+  reactRow.style.gap = "8px";
+  reactRow.style.margin = "12px 0";
+  REACTION_SET.forEach((e) => {
+    const r = document.createElement("button");
+    r.className = "reaction-quick";
+    r.innerText = e;
+    r.onclick = async () => {
+      await reactToMessage(msg._id, e);
+      sheet.remove();
+    };
+    reactRow.appendChild(r);
+  });
+  box.appendChild(reactRow);
+
+  // Delete for everyone (sender only)
+  if (msg.senderId === currentUser._id) {
+    const delAll = document.createElement("button");
+    delAll.className = "btn-danger";
+    delAll.innerText = "Delete for everyone";
+    delAll.onclick = async () => {
+      await deleteMessage(msg._id, true);
+      sheet.remove();
+    };
+    box.appendChild(delAll);
+  }
+
+  // Delete for me
+  const delMe = document.createElement("button");
+  delMe.innerText = "Delete for me";
+  delMe.onclick = async () => {
+    await deleteMessage(msg._id, false);
+    sheet.remove();
+  };
+  box.appendChild(delMe);
+
+  // Cancel
+  const cancel = document.createElement("button");
+  cancel.innerText = "Cancel";
+  cancel.onclick = () => sheet.remove();
+  box.appendChild(cancel);
+
+  sheet.appendChild(box);
+  document.body.appendChild(sheet);
+}
+
+function startReply(msg) {
+  currentReplyTarget = msg;
+
+  let bar = q("replyBar");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "replyBar";
+
+   const composer = document.querySelector(".floating-input-bar");
+
+
+    if (!composer) {
+      console.warn("❗ .composer not found when starting reply");
+      return;
+    }
+
+    if (!composer.parentNode) {
+      console.warn("❗ composer has no parentNode");
+      return;
+    }
+
+    composer.parentNode.insertBefore(bar, composer);
+  }
+
+  bar.innerHTML = `
+    <div>Replying to: <b>${msg.body.slice(0, 50)}</b></div>
+    <button onclick="cancelReply()" class="btn-ghost">✕</button>
+  `;
+}
+
+function cancelReply() {
+  currentReplyTarget = null;
+  const rb = q("replyBar");
+  if (rb) rb.remove();
+}
+
+// reactToMessage + deleteMessage
+async function reactToMessage(messageId, emoji) {
+  await client.mutation("privateChat:reactMessage", {
+    messageId,
+    userId: currentUser._id,
+    emoji,
+  });
+}
+
+async function deleteMessage(messageId, forEveryone) {
+  await client.mutation("privateChat:deleteMessage", {
+    messageId,
+    userId: currentUser._id,
+    forEveryone,
+  });
+}
+
 
 // background parallax
 document.addEventListener("mousemove", (e) => {

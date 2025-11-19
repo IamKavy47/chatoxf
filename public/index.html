@@ -262,7 +262,9 @@
             <div class="chat-title" id="chatName">User</div>
             <div id="chatUser" class="sub-text"></div>
           </div>
-          <button class="menu-btn"><i class="ri-more-fill"></i></button>
+          <button class="menu-btn" onclick="openChatOptions()">
+            <i class="ri-more-fill"></i>
+          </button>
         </div>
 
         <div class="messages-container" id="messages">
@@ -410,6 +412,25 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- MESSAGE ACTION MENU -->
+    <div id="msgActionsMenu" class="msg-action-modal">
+      <div class="msg-action-sheet">
+        <div class="emoji-row">
+          <span onclick="reactMessage('❤️')">❤️</span>
+          <span onclick="reactMessage('😂')">😂</span>
+          <span onclick="reactMessage('👍')">👍</span>
+          <span onclick="reactMessage('🔥')">🔥</span>
+          <span onclick="reactMessage('😮')">😮</span>
+        </div>
+
+        <div class="sheet-btn" onclick="replyToMessage()">Reply</div>
+        <div class="sheet-btn danger" onclick="deleteSingleMessage()">
+          Delete Message
+        </div>
+        <div class="sheet-btn cancel" onclick="closeMsgMenu()">Cancel</div>
       </div>
     </div>
 
