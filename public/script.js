@@ -1,37 +1,47 @@
-// ********** CONFIG **********
+// script.js — merged, cleaned, and fully animated
+// Dependencies required on page:
+// - gsap + CSSRulePlugin
+// - convex (Convex client library loaded globally as `convex`)
+
+// ============================================
+// ============ CONFIG / STATE ================
+// ============================================
 const CONVEX_URL = "https://doting-pony-792.convex.cloud";
 const client = new convex.ConvexClient(CONVEX_URL);
 
-// app state
+// App state
 let currentUser = null;
 let activeOtherId = null;
 let chatSubStop = null;
 let listSubStop = null;
 const profileCache = {};
 
-// helpers
+// Pending registration for OTP flow
+let pendingRegistration = null;
+
+// OTP timer state
+let otpTime = 30;
+let otpInterval = null;
+
+// Profile modal state
+let profileIsOwner = false;
+
+// PFP upload state
+let pfpFile = null;
+let pfpZoom = 1;
+
+// Last search result
+let lastSearch = null;
+
+// Helper
 function q(id) { return document.getElementById(id); }
 
-function showScreen(id) {
-  ["screen-register","screen-login","screen-list"].forEach(s=>{
-    const el = q(s); if(!el) return;
-    el.classList.remove("active");
-    el.style.display = "none";
-  });
-  q(id).style.display = "block";
-  q(id).classList.add("active");
+// Safe query helper
+function $(sel) { return document.querySelectorAll(sel); }
 
-  if(!currentUser || !activeOtherId) q("chatPanel").classList.remove("open");
-}
-
-function showChatPanelUI() { q("chatPanel").classList.add("open"); }
-function closeChat() {
-  q("chatPanel").classList.remove("open");
-  if(chatSubStop) chatSubStop();
-  activeOtherId = null;
-}
-
-// ========== IMAGE COMPRESSION ==========
+// ============================================
+// ========== IMAGE COMPRESSION ===============
+// ============================================
 async function compressImage(file, maxWidth=420, quality=0.72){
   return new Promise((resolve,reject)=>{
     const reader = new FileReader();
@@ -60,8 +70,11 @@ async function compressImage(file, maxWidth=420, quality=0.72){
   });
 }
 
-// ========== PROFILE HELPERS ==========
+// ============================================
+// ========== PROFILE HELPERS =================
+// ============================================
 async function getProfile(userId){
+  if(!userId) return null;
   if(profileCache[userId]) return profileCache[userId];
   const p = await client.query("users:getUserById",{id:userId});
   if(p && p.profilePic){
@@ -74,55 +87,62 @@ async function getProfile(userId){
 
 async function setMyProfileUI(){
   if(!currentUser) return;
-  q("meName").innerText = currentUser.name;
-  q("meUser").innerText = "@"+currentUser.username;
-
+  if(q("meName")) q("meName").innerText = currentUser.name || "";
+  if(q("meUser")) q("meUser").innerText = "@"+(currentUser.username || "");
   if(currentUser.profilePic){
     try {
       const url = await client.mutation("storage:getPFPUrl",{storageId:currentUser.profilePic});
-      q("meAvatarImg").src = url;
-      q("meAvatarImg").style.display = "block";
+      if(q("meAvatarImg")) { q("meAvatarImg").src = url; q("meAvatarImg").style.display = "block"; }
     } catch {}
-  } else {
-    q("meAvatarImg").style.display = "none";
-  }
+  } else if(q("meAvatarImg")) q("meAvatarImg").style.display = "none";
 }
 
-// ========== OTP REGISTRATION FLOW ==========
-let pendingRegistration = null;
-
-// STEP 1 — Request OTP
+// ============================================
+// ========== OTP REGISTRATION FLOW ===========
+// ============================================
 async function onRegister(){
-  const name = q("regName").value.trim();
-  const username = q("regUser").value.trim();
-  const email = q("regEmail").value.trim();
-  const password = q("regPass").value;
+  const name = q("regName")?.value.trim();
+  const username = q("regUser")?.value.trim();
+  const email = q("regEmail")?.value.trim();
+  const password = q("regPass")?.value;
 
   if(!name || !username || !email || !password)
     return alert("Please fill all fields");
 
   try {
-    const otp = await client.mutation("otp:requestOtp", {
+    // 1️⃣ request OTP from Convex
+    let rawOtp = await client.mutation("otp:requestOtp", {
       email,
       purpose: "register"
     });
 
-    // send OTP to your Gmail backend (wrap in try/catch so UI flow remains predictable)
+    // 2️⃣ fix OTP format (Convex may return object, number, or undefined)
+    let otp = (typeof rawOtp === "object" && rawOtp?.otp)
+      ? String(rawOtp.otp)
+      : String(rawOtp || "");
+
+    console.log("Sending OTP:", otp); // debug log
+
+    // 3️⃣ send OTP email
     try {
       const res = await fetch("https://chatmail-tan.vercel.app/api/send-otp", {
         method: "POST",
+        mode: "cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp })
       });
-      // optional: check response
-      const j = await res.json();
-      if(!j.ok) console.warn("OTP mailer reported failure:", j);
+
+      const j = await res.json().catch(()=>null);
+      if(!j || !j.ok) console.warn("OTP mailer reported failure:", j);
+
     } catch (e) {
       console.warn("Failed to call OTP mailer:", e);
-      // continue anyway (user will still have OTP in DB)
     }
 
+    // 4️⃣ hold data locally until OTP success
     pendingRegistration = { name, username, email, password };
+
+    // 5️⃣ open OTP modal
     openOtpModal(email);
 
   } catch(err){
@@ -130,81 +150,61 @@ async function onRegister(){
   }
 }
 
-// OTP Modal Logic
+
 function openOtpModal(email){
+  if(!q("otpModalOverlay")) return;
   q("otpModalOverlay").style.display = "flex";
-  q("otpEmailDisplay").innerText = email;
+  if(q("otpEmailDisplay")) q("otpEmailDisplay").innerText = email || "";
 
   document.querySelectorAll(".otp-input").forEach(i=>i.value="");
+  const otpInputs = document.querySelectorAll(".otp-input");
+  if(otpInputs && otpInputs.length) otpInputs[0].focus();
   startOtpTimer();
+
+  // entrance animation for otp inputs
+  if(window.gsap) {
+    gsap.from('.otp-input', {
+      duration: 0.4,
+      opacity: 0,
+      y: 10,
+      stagger: 0.08,
+      ease: 'back.out'
+    });
+  }
 }
 
 function closeOtpModal(){
+  if(!q("otpModalOverlay")) return;
   q("otpModalOverlay").style.display = "none";
-  // clear timer if any
   if (otpInterval) {
     clearInterval(otpInterval);
     otpInterval = null;
   }
 }
 
-// OTP timer
-let otpTime = 30;
-let otpInterval = null;
-
 function startOtpTimer(){
-  // prevent multiple intervals
   if (otpInterval) {
     clearInterval(otpInterval);
     otpInterval = null;
   }
 
   otpTime = 30;
-  q("otpResendBtn").disabled = true;
+  if(q("otpResendBtn")) q("otpResendBtn").disabled = true;
 
   otpInterval = setInterval(()=>{
     otpTime--;
-    q("otpTimer").innerText = `Resend in ${otpTime}s`;
+    if(q("otpTimer")) q("otpTimer").innerText = `Resend in ${otpTime}s`;
 
     if(otpTime <= 0){
       clearInterval(otpInterval);
       otpInterval = null;
-      q("otpTimer").innerText = "";
-      q("otpResendBtn").disabled = false;
+      if(q("otpTimer")) q("otpTimer").innerText = "";
+      if(q("otpResendBtn")) q("otpResendBtn").disabled = false;
     }
   },1000);
 }
 
-// resend OTP
-q("otpResendBtn").onclick = async ()=>{
-  if(!pendingRegistration) return;
-  try {
-    const otp = await client.mutation("otp:requestOtp",{
-      email: pendingRegistration.email,
-      purpose: "register"
-    });
-
-    try {
-      const res = await fetch("https://chatmail-tan.vercel.app/api/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: pendingRegistration.email, otp })
-      });
-      const j = await res.json();
-      if(!j.ok) console.warn("OTP mailer reported failure on resend:", j);
-    } catch (e) {
-      console.warn("Failed to call OTP mailer on resend:", e);
-    }
-
-    startOtpTimer();
-  } catch (e) {
-    alert(e.message || "Failed to resend OTP");
-  }
-};
-
-// verify OTP
 async function verifyOtp(){
-  // ensure we have pending registration context
   if(!pendingRegistration || !pendingRegistration.email) {
     return alert("No pending registration — please request OTP first");
   }
@@ -212,8 +212,20 @@ async function verifyOtp(){
   const boxes = [...document.querySelectorAll(".otp-input")];
   const otp = boxes.map(b => b.value.trim()).join("");
 
-  if(otp.length !== 6)
+  if(otp.length !== 6){
+    // visual shake if gsap available
+    if(window.gsap) {
+      gsap.to('.otp-input', {
+        duration: 0.4,
+        x: 0,
+        ease: 'back.inOut',
+        onStart: () => {
+          gsap.to('.otp-input', { x: -8, duration: 0.1 });
+        }
+      });
+    }
     return alert("Enter full 6-digit OTP");
+  }
 
   try {
     const ok = await client.query("otp:verifyOtp", {
@@ -222,8 +234,12 @@ async function verifyOtp(){
       purpose: "register"
     });
 
-    if(!ok)
+    if(!ok){
+      if(window.gsap) {
+        gsap.to('.otp-input', { duration: 0.4, x: 0, ease: 'back.inOut', onStart: () => gsap.to('.otp-input', { x: -8, duration: 0.1 }) });
+      }
       return alert("Invalid or expired OTP");
+    }
 
     // OTP SUCCESS → Create user
     const created = await client.mutation("users:register",{
@@ -234,7 +250,6 @@ async function verifyOtp(){
     });
 
     currentUser = created;
-    // clear pending
     pendingRegistration = null;
     closeOtpModal();
     openPfpModal();
@@ -244,11 +259,103 @@ async function verifyOtp(){
   }
 }
 
+// resend OTP handler
+if (q("otpResendBtn")) {
+  q("otpResendBtn").onclick = async () => {
+    if (!pendingRegistration) return;
 
-// ========== LOGIN ==========
+    try {
+      // 1️⃣ Get OTP from Convex
+      let rawOtp = await client.mutation("otp:requestOtp", {
+        email: pendingRegistration.email,
+        purpose: "register"
+      });
+
+      // 2️⃣ Convert OTP into a guaranteed string
+      let otp = (typeof rawOtp === "object" && rawOtp?.otp)
+        ? String(rawOtp.otp)
+        : String(rawOtp || "");
+
+      console.log("Resending OTP:", otp); // debug
+
+      // 3️⃣ Send OTP email
+      try {
+        const res = await fetch("https://chatmail-tan.vercel.app/api/send-otp", {
+          method: "POST",
+          mode: "cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: pendingRegistration.email, otp })
+        });
+
+        const j = await res.json().catch(() => null);
+        if (!j || !j.ok)
+          console.warn("OTP mailer reported failure on resend:", j);
+
+      } catch (e) {
+        console.warn("Failed to call OTP mailer on resend:", e);
+      }
+
+      // 4️⃣ Restart countdown
+      startOtpTimer();
+
+    } catch (e) {
+      alert(e.message || "Failed to resend OTP");
+    }
+  };
+}
+
+
+// Setup OTP input behaviors (focus next, backspace, paste)
+function wireOtpInputs() {
+  const otpInputs = document.querySelectorAll('.otp-input');
+  if(!otpInputs || otpInputs.length===0) return;
+  otpInputs.forEach((input, idx) => {
+    input.addEventListener('input', (e) => {
+      const value = e.target.value;
+      if (!/^\d*$/.test(value)) {
+        e.target.value = '';
+        return;
+      }
+      if (value.length === 1 && idx < otpInputs.length - 1) {
+        if(window.gsap) gsap.to(otpInputs[idx + 1], { duration: 0.2, scale: 1.1, ease: 'back.out' });
+        otpInputs[idx + 1].focus();
+      }
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !input.value && idx > 0) {
+        otpInputs[idx - 1].focus();
+        otpInputs[idx - 1].value = '';
+      }
+    });
+
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pastedData = e.clipboardData.getData('text');
+      const digits = pastedData.replace(/\D/g, '').split('');
+
+      digits.forEach((digit, i) => {
+        if (idx + i < otpInputs.length) {
+          otpInputs[idx + i].value = digit;
+          if(window.gsap) gsap.to(otpInputs[idx + i], { duration: 0.2, scale: 1.05, ease: 'back.out' }); // paste animation
+        }
+      });
+
+      const lastIdx = Math.min(idx + digits.length, otpInputs.length - 1);
+      otpInputs[lastIdx].focus();
+    });
+  });
+}
+
+// call wiring after DOM elements present
+document.addEventListener('DOMContentLoaded', wireOtpInputs);
+
+// ============================================
+// ========== AUTH / LOGIN / LOGOUT ===========
+// ============================================
 async function onLogin(){
-  const username = q("loginUser").value.trim();
-  const pass = q("loginPass").value;
+  const username = q("loginUser")?.value.trim();
+  const pass = q("loginPass")?.value;
   if(!username || !pass) return alert("Provide credentials");
 
   try{
@@ -256,7 +363,7 @@ async function onLogin(){
     currentUser = await client.query("users:getUserById",{id:u._id});
     afterLogin();
   }catch(e){
-    alert(e.message);
+    alert(e.message || "Login failed");
   }
 }
 
@@ -266,28 +373,68 @@ function afterLogin(){
   startChatListSubscription();
 }
 
-// ========== LOGOUT ==========
 function logout(){
   currentUser = null;
   activeOtherId = null;
   if(chatSubStop) chatSubStop();
   if(listSubStop) listSubStop();
-  q("threadList").innerHTML = "";
-  q("messages").innerHTML = "";
+  if(q("threadList")) q("threadList").innerHTML = "";
+  if(q("messages")) q("messages").innerHTML = "";
   showRegister();
 }
 
-// ========== UI navigate ==========
-function showRegister(){ showScreen("screen-register"); }
-function showLogin(){ showScreen("screen-login"); }
-function showList(){ showScreen("screen-list"); }
+// ============================================
+// ========== NAVIGATION & UI HELPERS =========
+// ============================================
+function showScreen(screenId) {
+  ["screen-register","screen-login","screen-list"].forEach(s=>{
+    const el = q(s); if(!el) return;
+    el.classList.remove("active");
+    el.style.display = "none";
+  });
+  const tgt = q(screenId);
+  if(tgt) {
+    tgt.style.display = "block";
+    tgt.classList.add("active");
+  }
+  // hide chat panel if no user or no active chat
+  if(q("chatPanel") && (!currentUser || !activeOtherId)) q("chatPanel").classList.remove("open");
+}
+function showRegister() { showScreen("screen-register"); }
+function showLogin() { showScreen("screen-login"); }
+function showChatList() { showScreen("screen-list"); if(window.gsap) gsap.from('.thread', { duration: 0.4, opacity: 0, x: -20, stagger: 0.05, ease: 'power2.out' }); }
 
-// ========== SEARCH ==========
-let lastSearch = null;
+function showChatPanelUI(){
+  const chatPanel = q("chatPanel");
+  if(!chatPanel) return;
+  chatPanel.classList.add("open");
+  // focus messages container if available
+  if(q("messages")) q("messages").focus();
+}
 
+function closeChat(){
+  const chatPanel = q("chatPanel");
+  if(!chatPanel) return;
+  // smooth close animation
+  if(window.gsap) {
+    gsap.to(chatPanel, { duration: 0.3, x: '100%', opacity: 0, ease: 'power2.in', onComplete: ()=> chatPanel.classList.remove('open') });
+  } else {
+    chatPanel.classList.remove('open');
+  }
+  // Stop chat subscription
+  if(chatSubStop) {
+    try { chatSubStop(); } catch {}
+    chatSubStop = null;
+  }
+  activeOtherId = null;
+}
+
+// ============================================
+// ========== SEARCH & START CHAT =============
+// ============================================
 async function onSearch(){
   if(!currentUser) return alert("Login first");
-  const username = q("searchInput").value.trim();
+  const username = q("searchInput")?.value.trim();
   if(!username) return;
 
   try{
@@ -295,40 +442,46 @@ async function onSearch(){
     if(!u) return alert("User not found");
 
     lastSearch = u;
-    q("searchResult").style.display = "block";
-    q("srName").innerText = u.name;
-    q("srUser").innerText = "@"+u.username;
+    if(q("searchResult")) q("searchResult").style.display = "block";
+    if(q("srName")) q("srName").innerText = u.name;
+    if(q("srUser")) q("srUser").innerText = "@"+u.username;
 
     if(u.profilePic){
       try{
         const url = await client.mutation("storage:getPFPUrl",{storageId:u.profilePic});
-        q("srAvatarImg").src = url;
-        q("srAvatarImg").style.display = "block";
+        if(q("srAvatarImg")) { q("srAvatarImg").src = url; q("srAvatarImg").style.display = "block"; }
       }catch{}
-    } else q("srAvatarImg").style.display = "none";
+    } else if(q("srAvatarImg")) q("srAvatarImg").style.display = "none";
 
   }catch(e){
-    alert(e.message);
+    alert(e.message || "Search failed");
   }
 }
 
 async function startChatWithSearch(){
   if(!lastSearch) return;
   await openChat(lastSearch._id);
-  q("searchResult").style.display = "none";
-  q("searchInput").value = "";
+  if(q("searchResult")) q("searchResult").style.display = "none";
+  if(q("searchInput")) q("searchInput").value = "";
 }
 
+// ============================================
 // ========== CHAT LIST SUBSCRIPTION ==========
+// ============================================
 function startChatListSubscription(){
-  if(listSubStop) listSubStop();
+  if(!currentUser || !currentUser._id) return;
+  if(listSubStop) {
+    try { listSubStop(); } catch {}
+    listSubStop = null;
+  }
 
   listSubStop = client.onUpdate("chatList:getChatList",{userId:currentUser._id}, async (threads)=>{
     const container = q("threadList");
+    if(!container) return;
     container.innerHTML = "";
 
     if(!threads || threads.length===0){
-      container.innerHTML = "<div style='color:rgba(255,255,255,0.6)'>No chats yet</div>";
+      container.innerHTML = "<div style='color:rgba(241,245,249,0.6)'>No chats yet</div>";
       return;
     }
 
@@ -385,21 +538,23 @@ function startChatListSubscription(){
   });
 }
 
-// ========== OPEN CHAT ==========
+// ============================================
+// ========== OPEN CHAT & MESSAGES ============
+// ============================================
 async function openChat(otherUserId){
   if(!currentUser) return alert("Login first");
+  if(!otherUserId) return;
 
   activeOtherId = otherUserId;
 
   const other = await getProfile(otherUserId);
 
-  q("chatName").innerText = other?.name || "Unknown";
-  q("chatUser").innerText = "@"+(other?.username || "");
+  if(q("chatName")) q("chatName").innerText = other?.name || "Unknown";
+  if(q("chatUser")) q("chatUser").innerText = "@"+(other?.username || "");
 
   if(other?.avatarUrl){
-    q("chatAvatarImg").src = other.avatarUrl;
-    q("chatAvatarImg").style.display = "block";
-  } else q("chatAvatarImg").style.display="none";
+    if(q("chatAvatarImg")) { q("chatAvatarImg").src = other.avatarUrl; q("chatAvatarImg").style.display = "block"; }
+  } else if(q("chatAvatarImg")) q("chatAvatarImg").style.display="none";
 
   try{
     await client.mutation("privateChat:markThreadRead",{userId:currentUser._id, otherId:otherUserId});
@@ -407,225 +562,175 @@ async function openChat(otherUserId){
 
   showChatPanelUI();
 
-  if(chatSubStop) chatSubStop();
+  // animate chat panel open
+  const chatPanel = q("chatPanel");
+  if(chatPanel && window.gsap) {
+    gsap.fromTo(chatPanel, { x: '8%', opacity: 0 }, { duration: 0.35, x: 0, opacity: 1, ease: 'power2.out' });
+    chatPanel.classList.add('open');
+  } else if(chatPanel) {
+    chatPanel.classList.add('open');
+  }
+
+  // stop old subscription if any
+  if(chatSubStop) {
+    try { chatSubStop(); } catch {}
+    chatSubStop = null;
+  }
+
   chatSubStop = client.onUpdate(
     "privateChat:getPrivateMessages",
     {senderId:currentUser._id, receiverId:otherUserId},
     (msgs)=>{
       const box = q("messages");
+      if(!box) return;
       box.innerHTML = "";
       msgs.forEach(m=>{
         const b = document.createElement("div");
         b.className = "bubble " + (m.senderId===currentUser._id ? "me" : "");
         b.innerText = m.body;
+
         const time = document.createElement("div");
         time.className = "meta";
-        time.innerText = new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        try {
+          time.innerText = new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        } catch { time.innerText = ""; }
         b.appendChild(time);
+
         box.appendChild(b);
+
+        // animate each bubble
+        if(window.gsap) {
+          gsap.from(b, { duration: 0.28, y: 10, opacity: 0, ease: 'back.out' });
+        }
       });
       box.scrollTop = box.scrollHeight;
     }
   );
 }
 
-// ========== SEND MESSAGE ==========
+// ============================================
+// ========== SEND MESSAGE ====================
+// ============================================
 async function onSend(){
-  const txt = q("msgInput").value.trim();
+  const txt = q("msgInput")?.value.trim();
   if(!txt || !activeOtherId) return;
 
-  await client.mutation("privateChat:sendPrivateMessage",{
-    senderId:currentUser._id,
-    receiverId:activeOtherId,
-    body:txt
-  });
-
-  q("msgInput").value = "";
-}
-
-// initial screen
-showRegister();
-
-// background parallax
-document.addEventListener("mousemove",e=>{
-  const x = (e.clientX/window.innerWidth - 0.5) * 10;
-  const y = (e.clientY/window.innerHeight - 0.5) * 10;
-  document.body.style.backgroundPosition = `calc(50% + ${x}px) calc(50% + ${y}px)`;
-});
-
-// ========== PROFILE & PFP ==========
-let pfpFile = null;
-let pfpZoom = 1;
-
-function openPfpModal(){
-  q("pfpModalOverlay").style.display="flex";
-  q("pfpPreviewImg").style.display="none";
-  q("pfpFile").value="";
-  q("pfpZoom").value=1;
-  pfpFile=null;
-  pfpZoom=1;
-}
-
-function skipPfp(){
-  q("pfpModalOverlay").style.display="none";
-  (async()=>{
-    currentUser = await client.query("users:getUserById",{id:currentUser._id});
-    afterLogin();
-  })();
-}
-
-q("pfpFile").addEventListener("change",e=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  pfpFile = file;
-  const r = new FileReader();
-  r.onload = ()=>{
-    q("pfpPreviewImg").style.display="block";
-    q("pfpPreviewImg").src = r.result;
-  };
-  r.readAsDataURL(file);
-});
-
-q("pfpZoom").oninput = e=>{
-  pfpZoom = parseFloat(e.target.value);
-  q("pfpPreviewImg").style.transform = `scale(${pfpZoom})`;
-};
-
-// upload PFP
-async function savePfp(){
-  if(!pfpFile) return skipPfp();
-
-  try{
-    const dataUrl = await compressImage(pfpFile,800,0.8);
-    const binary = atob(dataUrl.split(",")[1]);
-    const bytes = new Uint8Array(binary.length);
-    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
-
-    const blob = new Blob([bytes],{type:pfpFile.type || "image/jpeg"});
-    const uploadUrl = await client.mutation("storage:getUploadUrl");
-
-    const res = await fetch(uploadUrl,{
-      method:"POST", headers:{"Content-Type":blob.type}, body:blob
+  try {
+    await client.mutation("privateChat:sendPrivateMessage",{
+      senderId:currentUser._id,
+      receiverId:activeOtherId,
+      body:txt
     });
-    const {storageId} = await res.json();
+    if(q("msgInput")) q("msgInput").value = "";
 
-    // make sure userId is provided
-    if(!currentUser || !currentUser._id) {
-      throw new Error("No currentUser set – cannot save PFP");
+    // small send animation on button
+    const sendBtn = document.querySelector('.send-btn');
+    if(sendBtn && window.gsap) {
+      gsap.to(sendBtn, { duration: 0.12, scale: 0.92 });
+      gsap.to(sendBtn, { duration: 0.35, scale: 1, ease: 'elastic.out(1.5, 0.5)', delay: 0.12 });
     }
-
-    await client.mutation("storage:savePFP",{userId:currentUser._id, storageId});
-    currentUser = await client.query("users:getUserById",{id:currentUser._id});
-    setMyProfileUI();
-
-    q("pfpModalOverlay").style.display="none";
-    afterLogin();
-
-  }catch(e){
-    alert("Failed to upload picture: " + (e.message || e));
+  } catch(e){
+    console.warn("Send message failed:", e);
   }
 }
 
-// profile modal
-let profileIsOwner = false;
+// support Enter to send
+document.addEventListener('keydown', (e) => {
+  // if focus on msgInput and Enter pressed (no shift)
+  if(e.key === 'Enter' && !e.shiftKey && document.activeElement === q("msgInput")) {
+    e.preventDefault();
+    onSend();
+  }
+});
+
+// ============================================
+// ========== PROFILE EDIT / PFP =============
+// ============================================
 async function openMyProfile(){
   if(!currentUser) return;
   profileIsOwner = true;
   await fillProfileModal(currentUser, true);
-  q("profileModalOverlay").style.display = "flex";
-  q("profileModalOverlay").setAttribute("aria-hidden","false");
+  if(q("profileModalOverlay")) { q("profileModalOverlay").style.display = "flex"; q("profileModalOverlay").setAttribute("aria-hidden","false"); }
 }
 
 async function openOtherProfile(userId){
-  // fetch public profile
   const u = await client.query("users:getPublicProfile", { userId });
   if(!u) return alert("User not found");
   profileIsOwner = (currentUser && currentUser._id === userId);
   await fillProfileModal(u, profileIsOwner);
-  q("profileModalOverlay").style.display = "flex";
-  q("profileModalOverlay").setAttribute("aria-hidden","false");
+  if(q("profileModalOverlay")) { q("profileModalOverlay").style.display = "flex"; q("profileModalOverlay").setAttribute("aria-hidden","false"); }
 }
 
 function closeProfileModal(){
-  q("profileModalOverlay").style.display = "none";
-  q("profileModalOverlay").setAttribute("aria-hidden","true");
+  if(q("profileModalOverlay")) { q("profileModalOverlay").style.display = "none"; q("profileModalOverlay").setAttribute("aria-hidden","true"); }
 }
 
 async function fillProfileModal(userObj, editable){
-  // userObj may be currentUser or public
-  q("profileNameDisplay").innerText = userObj.name || "";
-  q("profileUsernameDisplay").innerText = "@"+(userObj.username || "");
+  if(q("profileNameDisplay")) q("profileNameDisplay").innerText = userObj.name || "";
+  if(q("profileUsernameDisplay")) q("profileUsernameDisplay").innerText = "@"+(userObj.username || "");
   if(userObj.profilePic){
     try{
       const url = await client.mutation("storage:getPFPUrl", { storageId: userObj.profilePic });
-      q("profileAvatarImg").src = url;
-      q("profileAvatarImg").style.display = "block";
+      if(q("profileAvatarImg")) { q("profileAvatarImg").src = url; q("profileAvatarImg").style.display = "block"; }
     }catch(e){
-      q("profileAvatarImg").style.display = "none";
+      if(q("profileAvatarImg")) q("profileAvatarImg").style.display = "none";
     }
-  } else {
-    q("profileAvatarImg").style.display = "none";
-  }
+  } else if(q("profileAvatarImg")) q("profileAvatarImg").style.display = "none";
 
   if(editable){
-    q("profileEditArea").style.display = "block";
-    q("profileReadOnlyAbout").style.display = "none";
-    // fill inputs
-    q("editName").value = userObj.name || "";
-    q("editUsername").value = userObj.username || "";
-    q("editAbout").value = userObj.about || "";
-    // attach live checking on username
-    q("editUsername").oninput = async ()=>{
-      const val = q("editUsername").value.trim();
-      if(!val) { q("usernameStatus").innerText = ""; return; }
-      try{
-        const available = await client.query("users:checkUsername", { username: val });
-        if(available || val === (currentUser && currentUser.username)){
-          q("usernameStatus").innerText = "Available ✔";
-          q("usernameStatus").className = "status-available";
-        } else {
-          q("usernameStatus").innerText = "Unavailable ✖";
-          q("usernameStatus").className = "status-unavailable";
+    if(q("profileEditArea")) q("profileEditArea").style.display = "block";
+    if(q("profileReadOnlyAbout")) q("profileReadOnlyAbout").style.display = "none";
+    if(q("editName")) q("editName").value = userObj.name || "";
+    if(q("editUsername")) q("editUsername").value = userObj.username || "";
+    if(q("editAbout")) q("editAbout").value = userObj.about || "";
+
+    if(q("editUsername")) {
+      q("editUsername").oninput = async ()=>{
+        const val = q("editUsername").value.trim();
+        if(!val) { if(q("usernameStatus")) q("usernameStatus").innerText = ""; return; }
+        try{
+          const available = await client.query("users:checkUsername", { username: val });
+          if(available || val === (currentUser && currentUser.username)){
+            if(q("usernameStatus")) { q("usernameStatus").innerText = "Available ✔"; q("usernameStatus").className = "status-available"; }
+          } else {
+            if(q("usernameStatus")) { q("usernameStatus").innerText = "Unavailable ✖"; q("usernameStatus").className = "status-unavailable"; }
+          }
+        }catch(e){
+          if(q("usernameStatus")) q("usernameStatus").innerText = "";
         }
-      }catch(e){
-        q("usernameStatus").innerText = "";
-      }
-    };
-    // wire upload file
-    q("editPfpFile").onchange = (ev)=>{
-      const f = ev.target.files && ev.target.files[0];
-      if(!f) return;
-      // show preview in profile avatar
-      const r = new FileReader();
-      r.onload = ()=>{
-        q("profileAvatarImg").src = r.result;
-        q("profileAvatarImg").style.display = "block";
       };
-      r.readAsDataURL(f);
-    };
+    }
+
+    if(q("editPfpFile")) {
+      q("editPfpFile").onchange = (ev)=>{
+        const f = ev.target.files && ev.target.files[0];
+        if(!f) return;
+        const r = new FileReader();
+        r.onload = ()=>{
+          if(q("profileAvatarImg")) { q("profileAvatarImg").src = r.result; q("profileAvatarImg").style.display = "block"; }
+        };
+        r.readAsDataURL(f);
+      };
+    }
   } else {
-    q("profileEditArea").style.display = "none";
-    q("profileReadOnlyAbout").style.display = "block";
-    q("profileReadOnlyAbout").innerText = userObj.about || "";
+    if(q("profileEditArea")) q("profileEditArea").style.display = "none";
+    if(q("profileReadOnlyAbout")) { q("profileReadOnlyAbout").style.display = "block"; q("profileReadOnlyAbout").innerText = userObj.about || ""; }
   }
 }
 
 async function saveProfile(){
   if(!currentUser) return;
-  const name = q("editName").value.trim();
-  const username = q("editUsername").value.trim();
-  const about = q("editAbout").value;
+  const name = q("editName")?.value.trim();
+  const username = q("editUsername")?.value.trim();
+  const about = q("editAbout")?.value;
 
-  // validation: username availability
   try{
     const available = await client.query("users:isUsernameAvailable", { username });
     if(!available && username !== currentUser.username){
       alert("Username is taken");
       return;
     }
-  }catch(e){
-    // ignore
-  }
+  }catch(e){}
 
   try{
     await client.mutation("users:updateProfile", {
@@ -635,8 +740,7 @@ async function saveProfile(){
       about
     });
 
-    // if new pfp file selected
-    const pf = q("editPfpFile").files && q("editPfpFile").files[0];
+    const pf = q("editPfpFile")?.files && q("editPfpFile").files[0];
     if (pf) {
       const dataUrl = await compressImage(pf, 800, 0.8);
       const binary = atob(dataUrl.split(",")[1]);
@@ -654,10 +758,7 @@ async function saveProfile(){
 
       const { storageId } = await result.json();
 
-      // ensure currentUser exists
-      if(!currentUser || !currentUser._id) {
-        throw new Error("No currentUser set – cannot save PFP");
-      }
+      if(!currentUser || !currentUser._id) throw new Error("No currentUser set – cannot save PFP");
 
       await client.mutation("storage:savePFP", {
         userId: currentUser._id,
@@ -665,8 +766,6 @@ async function saveProfile(){
       });
     }
 
-
-    // refresh current user
     currentUser = await client.query("users:getUserById", { id: currentUser._id });
     setMyProfileUI();
     closeProfileModal();
@@ -682,20 +781,190 @@ async function onRemovePfp(){
     await client.mutation("users:removePFP", { userId: currentUser._id });
     currentUser = await client.query("users:getUserById", { id: currentUser._id });
     setMyProfileUI();
-    // update modal UI
-    q("profileAvatarImg").style.display = "none";
+    if(q("profileAvatarImg")) q("profileAvatarImg").style.display = "none";
   }catch(e){
     alert("Failed to remove");
   }
 }
 
-// ---------- helper to open profile when clicking avatar in header or thread list ----------
-// make header avatar clickable to open own profile
-q("meAvatar").addEventListener("click", ()=> openMyProfile());
-// make chat header avatar clickable (view other's profile)
-q("chatAvatar").addEventListener("click", async ()=>{
-  if(!activeOtherId) return;
-  await openOtherProfile(activeOtherId);
+// PFP modal helpers
+function openPfpModal(){
+  if(q("pfpModalOverlay")) q("pfpModalOverlay").style.display="flex";
+  if(q("pfpPreviewImg")) q("pfpPreviewImg").style.display="none";
+  if(q("pfpFile")) q("pfpFile").value="";
+  if(q("pfpZoom")) q("pfpZoom").value=1;
+  pfpFile=null;
+  pfpZoom=1;
+}
+
+function skipPfp(){
+  if(q("pfpModalOverlay")) q("pfpModalOverlay").style.display="none";
+  (async()=>{
+    currentUser = await client.query("users:getUserById",{id:currentUser._id});
+    afterLogin();
+  })();
+}
+
+if(q("pfpFile")) q("pfpFile").addEventListener("change",e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  pfpFile = file;
+  const r = new FileReader();
+  r.onload = ()=>{
+    if(q("pfpPreviewImg")) { q("pfpPreviewImg").style.display="block"; q("pfpPreviewImg").src = r.result; }
+  };
+  r.readAsDataURL(file);
 });
 
-window.LG = {client, getProfile, openChat, logout};
+if(q("pfpZoom")) q("pfpZoom").oninput = e=>{
+  pfpZoom = parseFloat(e.target.value);
+  if(q("pfpPreviewImg")) q("pfpPreviewImg").style.transform = `scale(${pfpZoom})`;
+};
+
+async function savePfp(){
+  if(!pfpFile) return skipPfp();
+
+  try{
+    const dataUrl = await compressImage(pfpFile,800,0.8);
+    const binary = atob(dataUrl.split(",")[1]);
+    const bytes = new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+
+    const blob = new Blob([bytes],{type:pfpFile.type || "image/jpeg"});
+    const uploadUrl = await client.mutation("storage:getUploadUrl");
+
+    const res = await fetch(uploadUrl,{
+      method:"POST", headers:{"Content-Type":blob.type}, body:blob
+    });
+    const {storageId} = await res.json();
+
+    if(!currentUser || !currentUser._id) {
+      throw new Error("No currentUser set – cannot save PFP");
+    }
+
+    await client.mutation("storage:savePFP",{userId:currentUser._id, storageId});
+    currentUser = await client.query("users:getUserById",{id:currentUser._id});
+    setMyProfileUI();
+
+    if(q("pfpModalOverlay")) q("pfpModalOverlay").style.display="none";
+    afterLogin();
+
+  }catch(e){
+    alert("Failed to upload picture: " + (e.message || e));
+  }
+}
+
+// ============================================
+// ========== FRONTEND ANIMATIONS =============
+// ============================================
+
+// Initialize GSAP plugin if present
+if(window.gsap && window.CSSRulePlugin) {
+  try { gsap.registerPlugin(CSSRulePlugin); } catch(e){}
+}
+
+window.addEventListener('load', () => {
+  if(window.gsap) {
+    gsap.timeline()
+      .from('.brand', { duration: 0.6, opacity: 0, y: -20, ease: 'back.out' }, 0)
+      .from('.screen.active .field', { duration: 0.5, opacity: 0, y: 10, stagger: 0.08 }, 0.2);
+  }
+});
+
+// Button ripple + micro interactions
+if($('.btn').length) {
+  document.querySelectorAll('.btn').forEach(btn => {
+    btn.addEventListener('mouseenter', function() {
+      if(window.gsap) gsap.to(this, { duration: 0.18, scale: 1.03, ease: 'power2.out' });
+    });
+
+    btn.addEventListener('mouseleave', function() {
+      if(window.gsap) gsap.to(this, { duration: 0.18, scale: 1, ease: 'power2.out' });
+    });
+
+    btn.addEventListener('click', function(e) {
+      if(window.gsap) {
+        gsap.to(this, { duration: 0.09, scale: 0.95, ease: 'power2.out' });
+        gsap.to(this, { duration: 0.32, scale: 1, ease: 'elastic.out(1.5, 0.5)', delay: 0.09 });
+      }
+    });
+  });
+}
+
+// Thread hover
+if($('.thread').length) {
+  document.querySelectorAll('.thread').forEach(thread => {
+    thread.addEventListener('mouseenter', function() {
+      if(window.gsap) gsap.to(this, { duration: 0.22, x: 6, ease: 'power2.out' });
+    });
+    thread.addEventListener('mouseleave', function() {
+      if(window.gsap) gsap.to(this, { duration: 0.22, x: 0, ease: 'power2.out' });
+    });
+  });
+}
+
+// Input focus glow
+if($('input:not(.otp-input), textarea').length) {
+  document.querySelectorAll('input:not(.otp-input), textarea').forEach(input => {
+    input.addEventListener('focus', function() {
+      if(window.gsap) gsap.to(this, { duration: 0.2, boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.15)', ease: 'power2.out' });
+    });
+
+    input.addEventListener('blur', function() {
+      if(window.gsap) gsap.to(this, { duration: 0.2, boxShadow: 'none', ease: 'power2.out' });
+    });
+  });
+}
+
+// FAB hover
+if($('.fab').length) {
+  document.querySelectorAll('.fab').forEach(fab => {
+    fab.addEventListener('mouseenter', function() {
+      if(window.gsap) gsap.to(this, { duration: 0.3, scale: 1.1, rotation: 10, ease: 'back.out' });
+    });
+    fab.addEventListener('mouseleave', function() {
+      if(window.gsap) gsap.to(this, { duration: 0.3, scale: 1, rotation: 0, ease: 'back.out' });
+    });
+  });
+}
+
+// Enter key handling for msgInput (with send button animation)
+if(q("msgInput")) {
+  q("msgInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onSend();
+      const sendBtn = document.querySelector('.send-btn');
+      if(sendBtn && window.gsap) {
+        gsap.to(sendBtn, { duration: 0.15, scale: 0.92 });
+        gsap.to(sendBtn, { duration: 0.3, scale: 1, ease: 'elastic.out(1.5, 0.5)', delay: 0.15 });
+      }
+    }
+  });
+}
+
+// Background parallax
+document.addEventListener("mousemove",e=>{
+  const x = (e.clientX/window.innerWidth - 0.5) * 10;
+  const y = (e.clientY/window.innerHeight - 0.5) * 10;
+  document.body.style.backgroundPosition = `calc(50% + ${x}px) calc(50% + ${y}px)`;
+});
+
+// Small helpers for animated opens
+function openOtpModalWithAnimation(email){ openOtpModal(email); if(window.gsap) gsap.from('.otp-input', { duration: 0.4, opacity: 0, y: 10, stagger: 0.08, ease: 'back.out' }); }
+function showChatListAnimated() { showChatList(); if(window.gsap) gsap.from('.thread', { duration: 0.4, opacity: 0, x: -20, stagger: 0.05, ease: 'power2.out' }); }
+function openChatAnimated(otherId) { openChat(otherId); const chatPanel = q('chatPanel'); if(chatPanel && window.gsap) gsap.to(chatPanel, { duration: 0.3, x: 0, opacity: 1, ease: 'power2.out' }); }
+function closeChatAnimated() { const chatPanel = q('chatPanel'); if(chatPanel && window.gsap) gsap.to(chatPanel, { duration: 0.3, x: '100%', opacity: 0, ease: 'power2.in', onComplete: () => closeChat() }); }
+
+// wire avatar click shortcuts if present
+if(q("meAvatar")) q("meAvatar").addEventListener("click", ()=> openMyProfile());
+if(q("chatAvatar")) q("chatAvatar").addEventListener("click", async ()=>{ if(!activeOtherId) return; await openOtherProfile(activeOtherId); });
+
+// export debug hooks
+window.LG = {client, getProfile, openChat, logout, openOtpModal, openPfpModal};
+
+// ============================================
+// ========== INITIALIZE SCREEN ===============
+// ============================================
+showRegister();
+wireOtpInputs();
