@@ -1,9 +1,12 @@
 import nodemailer from "nodemailer";
 
 export default async function handler(req, res) {
+
+  // CORS Fix
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Cache-Control", "no-store");
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST")
@@ -14,12 +17,12 @@ export default async function handler(req, res) {
   if (!email || !otp)
     return res.status(400).json({ error: "Email + OTP required" });
 
-  // Gmail SMTP transport
+  // Gmail Transporter
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.MAIL_USER,       // your Gmail
-      pass: process.env.MAIL_PASS,       // 16-digit app password
+      user: process.env.MAIL_USER,  // your Gmail
+      pass: process.env.MAIL_PASS,  // 16-digit app password
     },
   });
 
@@ -35,10 +38,11 @@ export default async function handler(req, res) {
           <h1 style="font-size:32px; font-weight:bold;">${otp}</h1>
           <p>This code expires in 5 minutes.</p>
         </div>
-      `,
+      `
     });
 
     return res.json({ ok: true });
+
   } catch (err) {
     console.log("EMAIL ERROR:", err);
     return res.status(500).json({ ok: false, error: err.message });
