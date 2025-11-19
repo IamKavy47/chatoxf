@@ -1,14 +1,17 @@
 import { Resend } from "resend";
 
 export default async function handler(req, res) {
+
   // ---- CORS FIX ----
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Cache-Control", "no-store"); // 🔥 IMPORTANT (Cloudflare cache fix)
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
+  // ------------------------------------------
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -16,22 +19,25 @@ export default async function handler(req, res) {
 
   let { email, otp } = req.body;
 
-  // Validate fields
   if (!email || otp == null) {
     return res.status(400).json({ error: "Email and OTP required" });
   }
 
-  // Normalize OTP into a string in ALL cases
+  // 🔥 ALWAYS convert OTP into clean string
   otp = String(
-    typeof otp === "object" && otp?.otp
-      ? otp.otp
+    typeof otp === "object"
+      ? otp?.otp ?? otp
       : otp
-  );
+  ).trim();
+
+  if (otp.length < 4 || otp.length > 8) {
+    return res.status(400).json({ error: "Invalid OTP format" });
+  }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: "OmniXForge <onboarding@resend.dev>",
       to: email,
       subject: "Your OmniXForge OTP Code",
@@ -45,9 +51,16 @@ export default async function handler(req, res) {
       `
     });
 
+    // 🔥 If Resend suppressed the email or bounced, we catch it here
+    if (!result || result.error) {
+      console.error("Resend API Returned Error:", result?.error);
+      return res.json({ ok: false, error: result?.error });
+    }
+
     return res.json({ ok: true });
+
   } catch (error) {
-    console.error("Resend Error:", error);
+    console.error("Resend Fatal Error:", error);
     return res.json({ ok: false, error: error.message });
   }
 }
