@@ -1,7 +1,6 @@
 import { Resend } from "resend";
 
 export default async function handler(req, res) {
-
   // ---- CORS FIX ----
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -10,17 +9,24 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
-  // -------------------
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { email, otp } = req.body;
+  let { email, otp } = req.body;
 
-  if (!email || !otp) {
+  // Validate fields
+  if (!email || otp == null) {
     return res.status(400).json({ error: "Email and OTP required" });
   }
+
+  // Normalize OTP into a string in ALL cases
+  otp = String(
+    typeof otp === "object" && otp?.otp
+      ? otp.otp
+      : otp
+  );
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
