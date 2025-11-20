@@ -751,8 +751,21 @@ function attachMessageInteractionHandlers(domNode, msg) {
 }
 
 function openMessageMenu(domNode, msg) {
+  // Remove old sheet if already open
+  const old = document.getElementById("actionSheetOverlay");
+  if (old) old.remove();
+
   let sheet = document.createElement("div");
   sheet.id = "actionSheetOverlay";
+  sheet.style.position = "fixed";
+  sheet.style.inset = "0";
+  sheet.style.background = "rgba(0,0,0,0.4)";
+  sheet.style.zIndex = "9999";
+
+  // Close when clicking outside the box
+  sheet.addEventListener("click", (e) => {
+    if (e.target === sheet) sheet.remove();
+  });
 
   const box = document.createElement("div");
   box.className = "action-sheet";
@@ -771,6 +784,7 @@ function openMessageMenu(domNode, msg) {
   reactRow.style.display = "flex";
   reactRow.style.gap = "8px";
   reactRow.style.margin = "12px 0";
+
   REACTION_SET.forEach((e) => {
     const r = document.createElement("button");
     r.className = "reaction-quick";
@@ -781,6 +795,7 @@ function openMessageMenu(domNode, msg) {
     };
     reactRow.appendChild(r);
   });
+
   box.appendChild(reactRow);
 
   // Delete for everyone (sender only)
@@ -804,15 +819,19 @@ function openMessageMenu(domNode, msg) {
   };
   box.appendChild(delMe);
 
-  // Cancel
-  const cancel = document.createElement("button");
-  cancel.innerText = "Cancel";
-  cancel.onclick = () => sheet.remove();
-  box.appendChild(cancel);
+  // --- COPY MESSAGE ---
+  const copyBtn = document.createElement("button");
+  copyBtn.innerText = "Copy message";
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(msg.body || "");
+    sheet.remove();
+  };
+  box.appendChild(copyBtn);
 
   sheet.appendChild(box);
   document.body.appendChild(sheet);
 }
+
 
 function startReply(msg) {
   currentReplyTarget = msg;
