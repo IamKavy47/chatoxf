@@ -1,7 +1,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-const BOT_ID_RAW = "jd7cr4fks47wd1h1kre5k1mnjx7vshhr";
+const BOT_ID_RAW = "jn74f01v6hfsne187hkzbq5gkn7vsfpc";
 
 export const saveAIChat = mutation({
   args: {
