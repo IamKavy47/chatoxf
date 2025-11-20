@@ -529,7 +529,6 @@ async function openChat(otherUserId) {
   q("chatName").innerText = other?.name || "Unknown";
   if (q("chatUser")) q("chatUser").innerText = "@" + (other?.username || "");
 
-
   try {
     await client.mutation("privateChat:markThreadRead", {
       userId: currentUser._id,
@@ -617,8 +616,13 @@ async function openChat(otherUserId) {
 
 // ========== SEND MESSAGE ==========
 async function onSend() {
-  const txt = q("msgInput").value.trim();
+  const input = q("msgInput");
+  const txt = input.value.trim();
   if (!txt || !activeOtherId) return;
+
+  // 🔥 FIX → clear immediately
+  input.value = "";
+
 
   const payload = {
     senderId: currentUser._id,
@@ -627,8 +631,83 @@ async function onSend() {
     replyToId: currentReplyTarget ? currentReplyTarget._id : undefined,
   };
 
+  // send user message to DB (existing behavior)
   await client.mutation("privateChat:sendPrivateMessage", payload);
 
+  // ===== AI SEND HOOK (FIXED) =====
+  // Use the correct variable (txt) and call the backend action + mutation names
+  // that your backend expects:
+  //   action:  sendToAI_action:callAI   (returns aiText string)
+  //   mutation: sendToAI:saveAIChat     (saves both user+AI messages)
+  //
+  // If your backend uses different names, change them below to match.
+
+  const AI_BOT_ID = "jd7cr4fks47wd1h1kre5k1mnjx7vshhr";
+  if (String(activeOtherId) === AI_BOT_ID) {
+    try {
+      // 1) Ask server-side action to call the external AI provider
+      //    (this runs in Node runtime and returns aiText)
+      let aiText = null;
+
+      // try action name that earlier dev messages used
+      try {
+        const res = await client.action("sendToAI_action:callAI", {
+          text: txt,
+        });
+        // action may return either string or { aiText: '...' }
+        if (typeof res === "string") aiText = res;
+        else if (res && typeof res.aiText === "string") aiText = res.aiText;
+        else if (res && typeof res.text === "string") aiText = res.text;
+      } catch (actionErr) {
+        // fallback: maybe you still have the old action name or mutation.
+        // Try the old action name 'sendToAI' (non-namespaced) if present.
+        try {
+          const res2 = await client.action("sendToAI", {
+            userId: currentUser._id,
+            text: txt,
+          });
+          if (typeof res2 === "string") aiText = res2;
+          else if (res2 && typeof res2.aiText === "string")
+            aiText = res2.aiText;
+        } catch (fallbackErr) {
+          console.warn("AI action fallback failed:", fallbackErr);
+        }
+      }
+
+      // If action didn't return anything, set a safe fallback string
+      if (!aiText) aiText = "AI unavailable.";
+
+      // 2) Save AI reply in DB via mutation (server-side mutation)
+      //    saveToAI mutation name used in examples was `sendToAI:saveAIChat`
+      //    If your mutation name is different, change it accordingly.
+      try {
+        await client.mutation("sendToAI:saveAIChat", {
+          userId: currentUser._id,
+          text: txt,
+          aiText,
+        });
+      } catch (saveErr) {
+        // As a fallback, try the older mutation name `sendToAI`
+        try {
+          await client.mutation("sendToAI", {
+            userId: currentUser._id,
+            text: txt,
+          });
+        } catch (saveErr2) {
+          console.warn("Saving AI chat failed:", saveErr, saveErr2);
+        }
+      }
+
+      // 3) Optionally render AI message in the AI screen if you have an AI UI
+      // If user is currently viewing the chat panel with the bot, message will
+      // be fetched by your Convex subscription and appear automatically.
+      // But if you want immediate optimistic UI, you can append it now:
+    } catch (e) {
+      console.error("AI reply failed:", e);
+    }
+  }
+
+  // clear composer
   q("msgInput").value = "";
 
   // remove reply bar if present
@@ -636,6 +715,18 @@ async function onSend() {
   if (rb) rb.remove();
   currentReplyTarget = null;
 }
+
+// Press Enter to send message (keyboard + mobile)
+document.addEventListener("keydown", function (e) {
+  // If chat is not open, ignore
+  if (!q("chatPanel").classList.contains("open")) return;
+
+  // Prevent shift+enter (new line support)
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    onSend();
+  }
+});
 
 // showRegister();
 
@@ -1093,6 +1184,25 @@ function startChatListSubscription() {
       const container = q("threadList");
       container.innerHTML = "";
 
+      // ====== AI PINNED CHAT ======
+      const AI_BOT_ID = "jd7cr4fks47wd1h1kre5k1mnjx7vshhr";
+
+      const aiRow = document.createElement("div");
+      aiRow.className = "thread ai-thread";
+      aiRow.onclick = () => openChat(AI_BOT_ID);
+
+      aiRow.innerHTML = `
+  <div class="left" style="display:flex;align-items:center;gap:12px;">
+    <div class="avatar-circle" style="background:#333;">A</div>
+    <div class="meta">
+      <div class="name">ChatOXF AI</div>
+      <div class="last" style="font-size:12px;color:#999;">AI Assistant</div>
+    </div>
+  </div>
+`;
+
+      container.appendChild(aiRow);
+
       if (!threads || threads.length === 0) {
         container.innerHTML =
           "<div style='color:rgba(255,255,255,0.6); text-align:center; padding:20px;'>No chats yet</div>";
@@ -1100,6 +1210,9 @@ function startChatListSubscription() {
       }
 
       for (const t of threads) {
+
+        if (t.otherUserId === AI_BOT_ID) continue;
+
         const other = await getProfile(t.otherUserId);
 
         const row = document.createElement("div");
@@ -1197,5 +1310,14 @@ if (q("pfpZoom")) {
     if (img && img.style.display !== "none") {
       img.style.transform = `scale(${pfpZoom})`;
     }
+  };
+}
+
+// ===== AI BUTTON HANDLER =====
+const AI_BOT_ID = "jd7cr4fks47wd1h1kre5k1mnjx7vshhr";
+
+if (q("navAI")) {
+  q("navAI").onclick = () => {
+    openChat(AI_BOT_ID);
   };
 }

@@ -12,6 +12,8 @@ import type * as chatList from "../chatList.js";
 import type * as messages from "../messages.js";
 import type * as otp from "../otp.js";
 import type * as privateChat from "../privateChat.js";
+import type * as sendToAI from "../sendToAI.js";
+import type * as sendToAI_action from "../sendToAI_action.js";
 import type * as storage from "../storage.js";
 import type * as users from "../users.js";
 
@@ -26,6 +28,8 @@ declare const fullApi: ApiFromModules<{
   messages: typeof messages;
   otp: typeof otp;
   privateChat: typeof privateChat;
+  sendToAI: typeof sendToAI;
+  sendToAI_action: typeof sendToAI_action;
   storage: typeof storage;
   users: typeof users;
 }>;

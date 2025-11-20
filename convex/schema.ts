@@ -34,12 +34,12 @@ export default defineSchema({
     // Replies
     replyToId: v.optional(v.id("private_messages")),
 
-    // Reactions — using v.object({}) for dynamic keys
+    // Reactions (dynamic userId → emoji)
     reactions: v.optional(v.record(v.string(), v.string())),
 
-    // Deletion options
-    deleted: v.optional(v.boolean()),              // delete-for-everyone
-    deletedFor: v.optional(v.array(v.id("users"))), // delete-for-me
+    // Delete options
+    deleted: v.optional(v.boolean()),               // delete-for-everyone
+    deletedFor: v.optional(v.array(v.id("users")))  // delete-for-me
   })
     .index("by_pair", ["senderId", "receiverId"])
     .index("reverse_pair", ["receiverId", "senderId"]),
@@ -62,7 +62,7 @@ export default defineSchema({
 
 
   /* ============================
-        GLOBAL CHAT (optional)
+        GLOBAL CHAT (Optional)
   ============================ */
   messages: defineTable({
     author: v.string(),
@@ -86,8 +86,7 @@ export default defineSchema({
 
 
   /* ============================
-        DELETED MESSAGES  
-        (tracks delete-for-me)
+        DELETED MESSAGES TRACKER
   ============================ */
   deleted_messages: defineTable({
     userId: v.id("users"),
