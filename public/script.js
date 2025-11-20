@@ -642,7 +642,7 @@ async function onSend() {
   //
   // If your backend uses different names, change them below to match.
 
-  const AI_BOT_ID = "jd7cr4fks47wd1h1kre5k1mnjx7vshhr";
+  const AI_BOT_ID = "jn74f01v6hfsne187hkzbq5gkn7vsfpc";
   if (String(activeOtherId) === AI_BOT_ID) {
     try {
       // 1) Ask server-side action to call the external AI provider
@@ -1185,7 +1185,7 @@ function startChatListSubscription() {
       container.innerHTML = "";
 
       // ====== AI PINNED CHAT ======
-      const AI_BOT_ID = "jd7cr4fks47wd1h1kre5k1mnjx7vshhr";
+      const AI_BOT_ID = "jn74f01v6hfsne187hkzbq5gkn7vsfpc";
 
       const aiRow = document.createElement("div");
       aiRow.className = "thread ai-thread";
@@ -1314,7 +1314,7 @@ if (q("pfpZoom")) {
 }
 
 // ===== AI BUTTON HANDLER =====
-const AI_BOT_ID = "jd7cr4fks47wd1h1kre5k1mnjx7vshhr";
+const AI_BOT_ID = "jn74f01v6hfsne187hkzbq5gkn7vsfpc";
 
 if (q("navAI")) {
   q("navAI").onclick = () => {
