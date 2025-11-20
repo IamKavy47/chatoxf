@@ -1520,3 +1520,25 @@ body {
   color: #2d2d2d;
 }
 
+.thread {
+  overflow: hidden;             /* Prevent bubble overflow */
+}
+
+.thread .meta {
+  overflow: hidden;             /* Prevent text going out */
+}
+
+.thread .last {
+  white-space: nowrap;          /* Single line */
+  overflow: hidden;             /* Hide extra text */
+  text-overflow: ellipsis;      /* … added automatically */
+  max-width: 210px;             /* Prevent too long text */
+}
+
+
+.thread .name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;  /* Stop long names from breaking layout */
+}
