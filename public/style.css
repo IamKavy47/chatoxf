@@ -1158,3 +1158,71 @@ body {
   font-size: 13px;
   opacity: 0.65;
 }
+
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+/* =======================================================
+   BUBBLE + SWIPING BASE
+======================================================= */
+.bubble {
+  position: relative;
+  overflow: visible !important;    /* allow arrow outside */
+  transition: transform 0.18s ease, opacity 0.18s ease;
+  will-change: transform;
+}
+
+.bubble.swiping {
+  opacity: 0.88;
+}
+
+/* =======================================================
+   INDICATOR BASE STYLE
+======================================================= */
+.reply-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%) scale(0.8);
+  opacity: 0;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  font-size: 22px;
+  font-weight: bold;
+  color: #00ffae;        /* << change arrow color here */
+  pointer-events: none;
+  z-index: 20;
+  user-select: none;
+  text-shadow: 0 0 6px rgba(0, 255, 174, 0.5);
+}
+
+/* =======================================================
+   LEFT / RIGHT POSITIONING
+======================================================= */
+.bubble.me .reply-indicator {
+  right: -42px;      /* arrow OUTSIDE bubble to the right */
+}
+
+.bubble:not(.me) .reply-indicator {
+  left: -42px;       /* arrow OUTSIDE bubble to the left */
+}
+
+/* When actively swiping → show arrow */
+.bubble.swiping .reply-indicator {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+/* =======================================================
+   PREVENT HORIZONTAL SCROLL
+======================================================= */
+#messages,
+.messages,
+.messages-container {
+  overflow-x: hidden !important;
+}

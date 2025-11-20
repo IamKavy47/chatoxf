@@ -554,60 +554,178 @@ async function openChat(otherUserId) {
       box.innerHTML = "";
 
       msgs.forEach((m) => {
-        const b = document.createElement("div");
-        b.className = "bubble " + (m.senderId === currentUser._id ? "me" : "");
-        b.dataset.msgId = m._id;
+  const b = document.createElement("div");
+  b.className = "bubble " + (m.senderId === currentUser._id ? "me" : "");
+  b.dataset.msgId = m._id;
 
-        // -------- reply preview inside message --------
-        if (m.replyTo && m.replyTo.body) {
-          const r = document.createElement("div");
-          r.className = "reply-preview";
-          r.innerText = `${m.replyTo.senderName || "Reply"}: ${m.replyTo.body}`;
-          b.appendChild(r);
-        }
+  // ====== SWIPE-TO-REPLY (direction based) =======
 
-        // -------- message body --------
-        const body = document.createElement("div");
-        body.innerText = m.body;
-        b.appendChild(body);
+  const isMe = m.senderId === currentUser._id;
 
-        // -------- reactions --------
-        if (m.reactions && Object.keys(m.reactions).length) {
-          const bar = document.createElement("div");
-          bar.className = "reaction-display";
+  // swipe direction logic
+  const swipeDirection = isMe ? -1 : 1;
 
-          const count = {};
-          for (const [uid, emoji] of Object.entries(m.reactions))
-            count[emoji] = (count[emoji] || 0) + 1;
+  // ----- indicator arrow (OUTSIDE bubble) -----
+  const indicator = document.createElement("div");
+  indicator.className = "reply-indicator";
+  indicator.innerText = "↩";
+  indicator.style.position = "absolute";
+  indicator.style.top = "50%";
+  indicator.style.transform = "translateY(-50%) scale(.8)";
+  indicator.style.opacity = "0";
+  indicator.style.fontSize = "20px";
+  indicator.style.color = "#00ffae";
+  indicator.style.pointerEvents = "none";
+  indicator.style.userSelect = "none";
+  indicator.style.transition = "0.15s ease";
 
-          for (const [emoji, c] of Object.entries(count)) {
-            const pill = document.createElement("div");
-            pill.className = "reaction-pill";
-            pill.innerText = `${emoji} ${c}`;
-            pill.onclick = () => openReactionInfo(m, emoji);
-            bar.appendChild(pill);
-          }
+  // Position left or right
+  if (isMe) {
+    indicator.style.right = "-42px";
+  } else {
+    indicator.style.left = "-42px";
+  }
 
-          b.appendChild(bar);
-        }
+  b.appendChild(indicator);
 
-        // timestamp
-        const t = document.createElement("div");
-        t.className = "meta";
-        t.style.fontSize = "10px";
-        t.style.opacity = "0.6";
-        t.style.marginTop = "4px";
-        t.innerText = new Date(m.timestamp).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        b.appendChild(t);
+  let startX = 0;
+  let distX = 0;
+  let active = false;
+  const threshold = 55;
 
-        // attach long press / right click
-        attachMessageInteractionHandlers(b, m);
+  // function to move bubble + fade indicator
+  function moveBubble(amount) {
+    const slide = Math.min(amount, 70);
+    b.style.transform = `translateX(${slide * swipeDirection}px)`;
 
-        box.appendChild(b);
-      });
+    if (amount > 25) {
+      indicator.style.opacity = "1";
+      indicator.style.transform = "translateY(-50%) scale(1)";
+    } else {
+      indicator.style.opacity = "0";
+      indicator.style.transform = "translateY(-50%) scale(.8)";
+    }
+  }
+
+  // ========= MOBILE =========
+  b.addEventListener("touchstart", (e) => {
+    startX = e.touches[0].clientX;
+    active = true;
+    b.classList.add("swiping");
+  });
+
+  b.addEventListener("touchmove", (e) => {
+    if (!active) return;
+
+    distX = (e.touches[0].clientX - startX) * swipeDirection;
+
+    if (distX > 0) {
+      moveBubble(distX);
+    }
+  });
+
+  b.addEventListener("touchend", () => {
+    b.classList.remove("swiping");
+    indicator.style.opacity = "0";
+
+    if (distX > threshold) startReply(m);
+
+    b.style.transform = "translateX(0)";
+    distX = 0;
+    active = false;
+  });
+
+  // ========= DESKTOP =========
+  let mouseStart = 0;
+  let dragging = false;
+
+  b.addEventListener("mousedown", (e) => {
+    mouseStart = e.clientX;
+    dragging = true;
+    b.classList.add("swiping");
+  });
+
+  b.addEventListener("mousemove", (e) => {
+    if (!dragging) return;
+
+    distX = (e.clientX - mouseStart) * swipeDirection;
+
+    if (distX > 0) {
+      moveBubble(distX);
+    }
+  });
+
+  b.addEventListener("mouseup", (e) => {
+    b.classList.remove("swiping");
+    indicator.style.opacity = "0";
+
+    if (distX > threshold) startReply(m);
+
+    b.style.transform = "translateX(0)";
+    dragging = false;
+    distX = 0;
+  });
+
+  // Mouse leaves bubble → cancel drag
+  b.addEventListener("mouseleave", () => {
+    if (dragging) {
+      dragging = false;
+      b.style.transform = "translateX(0)";
+      indicator.style.opacity = "0";
+    }
+  });
+
+  // -------- reply preview inside message --------
+  if (m.replyTo && m.replyTo.body) {
+    const r = document.createElement("div");
+    r.className = "reply-preview";
+    r.innerText = `${m.replyTo.senderName || "Reply"}: ${m.replyTo.body}`;
+    b.appendChild(r);
+  }
+
+  // -------- message body --------
+  const body = document.createElement("div");
+  body.innerText = m.body;
+  b.appendChild(body);
+
+  // -------- reactions --------
+  if (m.reactions && Object.keys(m.reactions).length) {
+    const bar = document.createElement("div");
+    bar.className = "reaction-display";
+
+    const count = {};
+    for (const [uid, emoji] of Object.entries(m.reactions))
+      count[emoji] = (count[emoji] || 0) + 1;
+
+    for (const [emoji, c] of Object.entries(count)) {
+      const pill = document.createElement("div");
+      pill.className = "reaction-pill";
+      pill.innerText = `${emoji} ${c}`;
+      pill.onclick = () => openReactionInfo(m, emoji);
+      bar.appendChild(pill);
+    }
+
+    b.appendChild(bar);
+  }
+
+  // timestamp
+  const t = document.createElement("div");
+  t.className = "meta";
+  t.style.fontSize = "10px";
+  t.style.opacity = "0.6";
+  t.style.marginTop = "4px";
+  t.innerText = new Date(m.timestamp).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  b.appendChild(t);
+
+  // attach long press / right click
+  attachMessageInteractionHandlers(b, m);
+
+  box.appendChild(b);
+});
+
 
       box.scrollTop = box.scrollHeight;
     }
@@ -751,86 +869,99 @@ function attachMessageInteractionHandlers(domNode, msg) {
 }
 
 function openMessageMenu(domNode, msg) {
-  // Remove old sheet if already open
-  const old = document.getElementById("actionSheetOverlay");
+  // remove previous sheet if exists
+  const old = document.getElementById("msgActionSheet");
   if (old) old.remove();
 
-  let sheet = document.createElement("div");
-  sheet.id = "actionSheetOverlay";
-  sheet.style.position = "fixed";
-  sheet.style.inset = "0";
-  sheet.style.background = "rgba(0,0,0,0.4)";
-  sheet.style.zIndex = "9999";
-
-  // Close when clicking outside the box
-  sheet.addEventListener("click", (e) => {
-    if (e.target === sheet) sheet.remove();
-  });
-
-  const box = document.createElement("div");
-  box.className = "action-sheet";
-
-  // Reply
-  const btnReply = document.createElement("button");
-  btnReply.innerText = "Reply";
-  btnReply.onclick = () => {
-    startReply(msg);
-    sheet.remove();
+  // BACKDROP
+  const overlay = document.createElement("div");
+  overlay.id = "msgActionSheet";
+  overlay.style.position = "fixed";
+  overlay.style.inset = "0";
+  overlay.style.background = "rgba(0,0,0,0.35)";
+  overlay.style.zIndex = "9999";
+  overlay.style.backdropFilter = "blur(2px)";
+  overlay.onclick = (e) => {
+    if (e.target === overlay) overlay.remove();
   };
-  box.appendChild(btnReply);
 
-  // React options
+  // MAIN BOX
+  const sheet = document.createElement("div");
+  sheet.style.position = "absolute";
+  sheet.style.bottom = "0";
+  sheet.style.left = "0";
+  sheet.style.right = "0";
+  sheet.style.background = "#111";
+  sheet.style.borderTopLeftRadius = "20px";
+  sheet.style.borderTopRightRadius = "20px";
+  sheet.style.padding = "15px 0";
+  sheet.style.boxShadow = "0 -4px 25px rgba(0,0,0,0.4)";
+  sheet.style.animation = "slideUp 0.2s ease";
+
+  // ==== REACTION BAR ====
   const reactRow = document.createElement("div");
   reactRow.style.display = "flex";
-  reactRow.style.gap = "8px";
-  reactRow.style.margin = "12px 0";
+  reactRow.style.justifyContent = "center";
+  reactRow.style.gap = "14px";
+  reactRow.style.padding = "0 0 12px 0";
+  reactRow.style.borderBottom = "1px solid rgba(255,255,255,0.08)";
 
-  REACTION_SET.forEach((e) => {
-    const r = document.createElement("button");
-    r.className = "reaction-quick";
-    r.innerText = e;
-    r.onclick = async () => {
-      await reactToMessage(msg._id, e);
-      sheet.remove();
+  REACTION_SET.forEach((emoji) => {
+    const btn = document.createElement("button");
+    btn.innerText = emoji;
+    btn.style.fontSize = "22px";
+    btn.style.background = "transparent";
+    btn.style.border = "none";
+    btn.style.cursor = "pointer";
+    btn.onclick = async () => {
+      await reactToMessage(msg._id, emoji);
+      overlay.remove();
     };
-    reactRow.appendChild(r);
+    reactRow.appendChild(btn);
   });
 
-  box.appendChild(reactRow);
+  sheet.appendChild(reactRow);
+
+  // ==== OPTION FACTORY ====
+  function addOption(label, callback, danger = false) {
+    const opt = document.createElement("div");
+    opt.innerText = label;
+    opt.style.padding = "14px 20px";
+    opt.style.fontSize = "15px";
+    opt.style.cursor = "pointer";
+    opt.style.color = danger ? "#ff4d4d" : "#fff";
+    opt.style.borderBottom = "1px solid rgba(255,255,255,0.08)";
+
+    opt.onclick = () => {
+      callback();
+      overlay.remove();
+    };
+
+    sheet.appendChild(opt);
+  }
+
+  // Reply
+  addOption("Reply", () => startReply(msg));
+
+  // Copy
+  addOption("Copy", () => navigator.clipboard.writeText(msg.body || ""));
 
   // Delete for everyone (sender only)
   if (msg.senderId === currentUser._id) {
-    const delAll = document.createElement("button");
-    delAll.className = "btn-danger";
-    delAll.innerText = "Delete for everyone";
-    delAll.onclick = async () => {
+    addOption("Delete for everyone", async () => {
       await deleteMessage(msg._id, true);
-      sheet.remove();
-    };
-    box.appendChild(delAll);
+    }, true);
   }
 
   // Delete for me
-  const delMe = document.createElement("button");
-  delMe.innerText = "Delete for me";
-  delMe.onclick = async () => {
+  addOption("Delete for me", async () => {
     await deleteMessage(msg._id, false);
-    sheet.remove();
-  };
-  box.appendChild(delMe);
+  }, true);
 
-  // --- COPY MESSAGE ---
-  const copyBtn = document.createElement("button");
-  copyBtn.innerText = "Copy message";
-  copyBtn.onclick = () => {
-    navigator.clipboard.writeText(msg.body || "");
-    sheet.remove();
-  };
-  box.appendChild(copyBtn);
-
-  sheet.appendChild(box);
-  document.body.appendChild(sheet);
+  overlay.appendChild(sheet);
+  document.body.appendChild(overlay);
 }
+
 
 
 function startReply(msg) {
