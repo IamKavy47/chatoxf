@@ -1226,3 +1226,34 @@ body {
 .messages-container {
   overflow-x: hidden !important;
 }
+
+
+
+.bubble {
+  max-width: 75%;
+  width: fit-content;
+  max-height: none;
+  padding: 12px 16px;
+  border-radius: var(--radius-bubble);
+  font-size: 15px;
+  line-height: 1.5;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.bubble:not(.me) {
+  background: linear-gradient(135deg, #1a1a1a 0%, #161616 100%);
+  color: white;
+  border-top-left-radius: 4px;
+}
+
+.bubble.me {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  color: black;
+  border-top-right-radius: 4px;
+  border-color: rgba(0, 0, 0, 0.06);
+}
