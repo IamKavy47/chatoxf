@@ -1542,3 +1542,165 @@ body {
   text-overflow: ellipsis;
   max-width: 140px;  /* Stop long names from breaking layout */
 }
+/* ================================
+   FULLSCREEN PROFILE SCREEN
+=================================== */
+
+.profile-screen {
+  position: fixed;
+  inset: 0;
+  background: #0a0a0a; /* deep black */
+  display: none;
+  flex-direction: column;
+  padding: 20px;
+  z-index: 99999;
+}
+
+/* TOP BAR */
+.profile-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+}
+
+.profile-title {
+  flex: 1;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+/* MAIN CONTENT */
+.profile-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* AVATAR SECTION */
+.avatar-wrapper {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  margin: 10px auto 20px;
+  position: relative;
+  overflow: hidden;
+  border: 3px solid rgba(255,255,255,0.08);
+  background: #111;
+  box-shadow: 0 0 12px rgba(0,0,0,0.4);
+}
+
+.profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-edit-btn {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: #ffffff;
+  color: black;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+
+#editPfpFile {
+  display: none;
+}
+
+/* FIELD LABEL */
+.field-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #a1a1aa;
+  margin-left: 4px;
+}
+
+/* TEXT INPUT */
+.profile-field {
+  background: #151922;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 14px 16px;
+  font-size: 15px;
+  border-radius: 18px;
+  color: white;
+  outline: none;
+  transition: border 0.2s ease;
+}
+
+.profile-field:focus {
+  border-color: var(--accent-green);
+}
+
+/* BIO */
+.profile-bio {
+  height: 110px;
+  background: #151922;
+  border: 1px solid rgba(255,255,255,0.06);
+  color: white;
+  border-radius: 20px;
+  padding: 16px;
+  resize: none;
+  outline: none;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.profile-bio:focus {
+  border-color: var(--accent-green);
+}
+
+/* USERNAME STATUS */
+.username-status {
+  font-size: 13px;
+  height: 16px;
+  margin-top: -8px;
+  margin-bottom: 10px;
+}
+
+/* SAVE BUTTON */
+.btn-save-profile {
+  padding: 14px;
+  background: var(--accent-green);
+  border: none;
+  border-radius: 20px;
+  font-weight: 600;
+  color: black;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+  transition: transform 0.15s ease;
+}
+
+.btn-save-profile:active {
+  transform: scale(0.97);
+}
+
+/* REMOVE PICTURE */
+.btn-remove-pfp {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255,50,50,0.1);
+  border: 1px solid rgba(255,50,50,0.4);
+  color: #ff6666;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+#editPfpFile {
+  display: none !important;
+}

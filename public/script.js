@@ -1096,104 +1096,155 @@ function skipPfp() {
   afterLogin();
 }
 
+/* ======================================================
+   OPEN MY PROFILE
+====================================================== */
 async function openMyProfile() {
   if (!currentUser) return;
+
   profileIsOwner = true;
   await fillProfileModal(currentUser, true);
-  q("profileModalOverlay").style.display = "flex";
-  q("profileModalOverlay").setAttribute("aria-hidden", "false");
+
+  const scr = q("profileScreen");
+  scr.style.display = "flex";
+
+  scr.style.opacity = "0";
+  scr.style.transform = "translateY(20px)";
+  setTimeout(() => {
+    scr.style.opacity = "1";
+    scr.style.transform = "translateY(0)";
+  }, 10);
 }
 
+/* ======================================================
+   OPEN OTHER USER PROFILE
+====================================================== */
 async function openOtherProfile(userId) {
-  // fetch public profile
   const u = await client.query("users:getPublicProfile", { userId });
   if (!u) return alert("User not found");
-  profileIsOwner = currentUser && currentUser._id === userId;
-  await fillProfileModal(u, profileIsOwner);
-  q("profileModalOverlay").style.display = "flex";
-  q("profileModalOverlay").setAttribute("aria-hidden", "false");
+
+  const editable = currentUser._id === userId;
+  profileIsOwner = editable;
+
+  await fillProfileModal(u, editable);
+
+  const scr = q("profileScreen");
+  scr.style.display = "flex";
+
+  scr.style.opacity = "0";
+  scr.style.transform = "translateY(20px)";
+  setTimeout(() => {
+    scr.style.opacity = "1";
+    scr.style.transform = "translateY(0)";
+  }, 10);
 }
 
-function closeProfileModal() {
-  q("profileModalOverlay").style.display = "none";
-  q("profileModalOverlay").setAttribute("aria-hidden", "true");
+/* ======================================================
+   CLOSE PROFILE SCREEN
+====================================================== */
+function closeProfileScreen() {
+  const scr = q("profileScreen");
+
+  scr.style.opacity = "1";
+  scr.style.transform = "translateY(0)";
+
+  scr.style.opacity = "0";
+  scr.style.transform = "translateY(20px)";
+
+  setTimeout(() => {
+    scr.style.display = "none";
+  }, 200);
 }
 
+/* ======================================================
+   FILL PROFILE MODAL (Editable / Read-only)
+====================================================== */
 async function fillProfileModal(userObj, editable) {
-  // userObj may be currentUser or public
-  q("profileNameDisplay").innerText = userObj.name || "";
-  if (q("profileUsernameDisplay"))
-    q("profileUsernameDisplay").innerText = "@" + (userObj.username || "");
+  // Avatar load
   if (userObj.profilePic) {
     try {
       const url = await client.mutation("storage:getPFPUrl", {
-        storageId: userObj.profilePic,
+        storageId: userObj.profilePic
       });
       q("profileAvatarImg").src = url;
       q("profileAvatarImg").style.display = "block";
-    } catch (e) {
+    } catch {
       q("profileAvatarImg").style.display = "none";
     }
   } else {
     q("profileAvatarImg").style.display = "none";
   }
 
+  // Fill fields
+  q("editName").value = userObj.name || "";
+  q("editUsername").value = userObj.username || "";
+  if (q("editAbout")) q("editAbout").value = userObj.about || "";
+
+  // ===============================
+  // 🔥 OWNER MODE (your own profile)
+  // ===============================
   if (editable) {
-    q("profileEditArea").style.display = "block";
-    if (q("profileReadOnlyAbout"))
-      q("profileReadOnlyAbout").style.display = "none";
-    // fill inputs
-    q("editName").value = userObj.name || "";
-    q("editUsername").value = userObj.username || "";
-    if (q("editAbout")) q("editAbout").value = userObj.about || "";
-    // attach live checking on username
-    q("editUsername").oninput = async () => {
-      const val = q("editUsername").value.trim();
-      if (!val) {
-        if (q("usernameStatus")) q("usernameStatus").innerText = "";
-        return;
-      }
-      try {
-        const available = await client.query("users:checkUsername", {
-          username: val,
-        });
-        if (available || val === (currentUser && currentUser.username)) {
-          if (q("usernameStatus")) {
-            q("usernameStatus").innerText = "Available ✔";
-            q("usernameStatus").className = "status-text status-available";
-          }
-        } else {
-          if (q("usernameStatus")) {
-            q("usernameStatus").innerText = "Unavailable ✖";
-            q("usernameStatus").className = "status-text status-unavailable";
-          }
-        }
-      } catch (e) {
-        if (q("usernameStatus")) q("usernameStatus").innerText = "";
-      }
-    };
-    // wire upload file
-    if (q("editPfpFile")) {
-      q("editPfpFile").onchange = (ev) => {
-        const f = ev.target.files && ev.target.files[0];
-        if (!f) return;
-        // show preview in profile avatar
-        const r = new FileReader();
-        r.onload = () => {
-          q("profileAvatarImg").src = r.result;
-          q("profileAvatarImg").style.display = "block";
-        };
-        r.readAsDataURL(f);
-      };
-    }
+    // Enable fields
+    q("editName").disabled = false;
+    q("editUsername").disabled = false;
+    q("editAbout").disabled = false;
+
+    // Show edit tools
+    q("editPfpFile").style.display = "block";
+    q("usernameStatus").style.display = "block";
+    q("btnSaveProfile").style.display = "block";
+    q("btnRemovePfp").style.display = "block";
+    q("avatarEditBtn").style.display = "flex";
+
   } else {
-    q("profileEditArea").style.display = "none";
-    if (q("profileReadOnlyAbout")) {
-      q("profileReadOnlyAbout").style.display = "block";
-      q("profileReadOnlyAbout").innerText = userObj.about || "";
-    }
+    // ===============================
+    // ❌ VIEWING OTHER USER
+    // → Disable editing completely
+    // ===============================
+
+    // Disable fields
+    q("editName").disabled = true;
+    q("editUsername").disabled = true;
+    q("editAbout").disabled = true;
+
+    // Hide editing tools
+    q("editPfpFile").style.display = "none";
+    q("usernameStatus").style.display = "none";
+    q("btnSaveProfile").style.display = "none";
+    q("btnRemovePfp").style.display = "none";
+    q("avatarEditBtn").style.display = "none";
   }
+
+  // Username checker
+  q("editUsername").oninput = async () => {
+    if (!editable) return; // prevent checking for other users
+
+    const val = q("editUsername").value.trim();
+    if (!val) {
+      q("usernameStatus").innerText = "";
+      return;
+    }
+
+    try {
+      const available = await client.query("users:checkUsername", {
+        username: val
+      });
+
+      if (available || val === currentUser.username) {
+        q("usernameStatus").innerText = "Available ✔";
+        q("usernameStatus").style.color = "#d0fd3e";
+      } else {
+        q("usernameStatus").innerText = "Unavailable ✖";
+        q("usernameStatus").style.color = "#ff4444";
+      }
+    } catch {
+      q("usernameStatus").innerText = "";
+    }
+  };
 }
+
+
+
 
 async function saveProfile() {
   if (!currentUser) return;
@@ -1258,7 +1309,7 @@ async function saveProfile() {
       id: currentUser._id,
     });
     setMyProfileUI();
-    closeProfileModal();
+    closeProfileScreen();
   } catch (err) {
     alert(err.message || String(err));
   }

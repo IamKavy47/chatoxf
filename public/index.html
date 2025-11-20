@@ -29,7 +29,6 @@
           <div class="mindmate-header">
             <div class="logo-row">
               <i class="ri-chat-3-fill"></i> <span>ChatOXF</span>
-
             </div>
           </div>
 
@@ -354,68 +353,63 @@
       </div>
     </div>
 
-    <div id="profileModalOverlay" class="modal-overlay">
-      <div class="modal card-modal">
-        <div class="profile-header-bg"></div>
-        <div class="modal-header">
-          <h3>Profile</h3>
-          <button onclick="closeProfileModal()">
-            <i class="ri-close-line"></i>
-          </button>
+    <div id="profileScreen" class="screen profile-screen">
+      <div class="profile-topbar">
+        <button class="back-btn" onclick="closeProfileScreen()">
+          <i class="ri-arrow-left-line"></i>
+        </button>
+        <div class="profile-title">Profile</div>
+        <div style="width: 40px"></div>
+      </div>
+
+      <div class="profile-content">
+        <!-- Avatar -->
+        <div class="avatar-wrapper">
+          <img id="profileAvatarImg" class="profile-avatar" />
+          <label id="avatarEditBtn" for="editPfpFile" class="avatar-edit-btn">
+            <i class="ri-pencil-fill"></i>
+          </label>
+
+          <input type="file" id="editPfpFile" accept="image/*" />
         </div>
 
-        <div class="profile-view">
-          <img
-            id="profileAvatarImg"
-            alt="Profile"
-            class="avatar-lg"
-            style="display: none"
-          />
-          <div id="profileNameDisplay" class="big-name"></div>
-          <div id="profileUsernameDisplay" class="user-handle"></div>
+        <!-- Name -->
+        <label class="field-label">Name</label>
+        <input id="editName" class="profile-field" placeholder="Your name" />
 
-          <div id="profileReadOnlyAbout" class="about-text"></div>
-        </div>
+        <!-- Username -->
+        <label class="field-label">Username</label>
+        <input
+          id="editUsername"
+          class="profile-field"
+          placeholder="@username"
+        />
 
-        <div id="profileEditArea" style="display: none">
-          <input id="editName" class="pill-input" placeholder="Full Name" />
-          <input id="editUsername" class="pill-input" placeholder="Username" />
-          <div id="usernameStatus" class="status-text"></div>
-          <textarea
-            id="editAbout"
-            class="pill-input"
-            placeholder="Write something about yourself..."
-            rows="3"
-          ></textarea>
+        <div id="usernameStatus" class="username-status"></div>
 
-          <div class="file-input-wrapper">
-            <label
-              for="editPfpFile"
-              class="btn pill-btn secondary xs"
-              style="width: 100%"
-              >Change Profile Photo</label
-            >
-            <input
-              id="editPfpFile"
-              type="file"
-              accept="image/*"
-              class="hidden"
-            />
-          </div>
+        <!-- Bio -->
+        <label class="field-label">Bio</label>
+        <textarea
+          id="editAbout"
+          class="profile-bio"
+          placeholder="Write something about yourself..."
+        ></textarea>
 
-          <div style="display: flex; gap: 12px; margin-top: 24px">
-            <button class="btn pill-btn primary" onclick="saveProfile()">
-              Save Changes
-            </button>
-            <button
-              class="btn pill-btn secondary"
-              onclick="onRemovePfp()"
-              style="flex: 0.4; border-color: #ff4444; color: #ff4444"
-            >
-              Remove
-            </button>
-          </div>
-        </div>
+        <button
+          id="btnSaveProfile"
+          class="btn-save-profile"
+          onclick="saveProfile()"
+        >
+          Save Changes
+        </button>
+
+        <button
+          id="btnRemovePfp"
+          class="btn-remove-pfp danger"
+          onclick="onRemovePfp()"
+        >
+          Remove Profile Picture
+        </button>
       </div>
     </div>
 
