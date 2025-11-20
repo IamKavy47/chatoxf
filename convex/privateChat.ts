@@ -95,11 +95,26 @@ export const getPrivateMessages = query({
       // Delete-for-me hide
       if (deletedSet.has(msg._id)) continue;
 
-      // Load reply object
-      let reply = null;
-      if (msg.replyToId) {
-        reply = await ctx.db.get(msg.replyToId);
-      }
+     // Load enriched reply object (with sender name + username)
+let reply = null;
+
+if (msg.replyToId) {
+  const repliedMsg = await ctx.db.get(msg.replyToId);
+
+  if (repliedMsg) {
+    const repliedUser = await ctx.db.get(repliedMsg.senderId);
+
+    reply = {
+      _id: repliedMsg._id,
+      body: repliedMsg.body,
+      senderId: repliedMsg.senderId,
+      senderName: repliedUser?.name || null,
+      senderUsername: repliedUser?.username || null,
+      timestamp: repliedMsg.timestamp,
+    };
+  }
+}
+
 
       final.push({
         ...msg,

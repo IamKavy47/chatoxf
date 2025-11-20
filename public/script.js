@@ -676,12 +676,26 @@ async function openChat(otherUserId) {
   });
 
   // -------- reply preview inside message --------
-  if (m.replyTo && m.replyTo.body) {
-    const r = document.createElement("div");
-    r.className = "reply-preview";
-    r.innerText = `${m.replyTo.senderName || "Reply"}: ${m.replyTo.body}`;
-    b.appendChild(r);
-  }
+ if (m.replyTo && m.replyTo.body) {
+  const wrap = document.createElement("div");
+  wrap.className = "reply-preview-wrap";
+
+  const rp = document.createElement("div");
+  rp.className = m.senderId === currentUser._id 
+    ? "reply-preview-me"
+    : "reply-preview-other";
+
+  const replyName = m.replyTo.senderName || m.replyTo.senderUsername || "";
+
+  rp.innerHTML = `
+    <div class="rp-name">${replyName}</div>
+    <div class="rp-text">${m.replyTo.body.slice(0, 80)}</div>
+  `;
+
+  wrap.appendChild(rp);
+  b.appendChild(wrap);
+}
+
 
   // -------- message body --------
   const body = document.createElement("div");
