@@ -1070,6 +1070,7 @@ body {
   font-size: 12px;
   max-width: 85%;
   color: rgba(255, 255, 255, 0.85);
+  z-index: 999;
 }
 
 /* Sender name inside the reply preview */
@@ -1105,6 +1106,7 @@ body {
   font-size: 12px;
   max-width: 85%;
   color: rgba(255, 255, 255, 0.85);
+  z-index: 999;
 }
 
 /* Sender name for the other person's reply */
@@ -1707,9 +1709,11 @@ body {
 
 /* Glass Effect Variables */
 :root {
-  --glass-bg: rgba(255, 255, 255, 0.08);
-  --glass-highlight: rgba(255, 255, 255, 0.2);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-highlight: rgba(255, 255, 255, 0.1);
   --glass-border: rgba(255, 255, 255, 0.15);
+  --frosted-glass-bg: rgba(255, 255, 255, 0.08);
+  --frosted-glass-border: rgba(255, 255, 255, 0.2);
 }
 
 /* Messages Container - Add padding at bottom and top for floating bars */
@@ -1756,7 +1760,7 @@ body {
   height: 100%;
 }
 
-/* Chat Topbar with Glass Effect - Fixed positioning to float over messages */
+/* Chat Topbar with Frosted Glass Effect (no liquid distortion) */
 .chat-topbar {
   position: fixed;
   top: 0;
@@ -1771,9 +1775,25 @@ body {
   overflow: hidden;
   box-shadow: none;
   z-index: 10;
-  width: calc(100vw - 580px); /* Fix width calculation */
+  width: calc(100vw - 580px);
   box-sizing: border-box;
-  background: transparent;
+  background: var(--frosted-glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--frosted-glass-border);
+}
+
+/* Remove glass layers from topbar since we're using direct frosted glass */
+.chat-topbar .glass-filter,
+.chat-topbar .glass-overlay,
+.chat-topbar .glass-specular {
+  display: none;
+}
+
+.chat-topbar .glass-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
 }
 
 /* Make sure buttons and content are above glass layers with transparent backgrounds */
@@ -1799,7 +1819,7 @@ body {
   padding: 20px;
   background: transparent;
   border-top: none;
-  pointer-events: none; /* Allow clicking through transparent area */
+  /* pointer-events: none; Allow clicking through transparent area */
   z-index: 10;
 }
 
