@@ -1712,7 +1712,15 @@ body {
   --glass-border: rgba(255, 255, 255, 0.15);
 }
 
-/* Glass Layers - Add these to any element needing glass effect */
+/* Messages Container - Add padding at bottom and top for floating bars */
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 80px 20px 100px 20px; /* Top padding for topbar, bottom for input bar */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .glass-filter {
   position: absolute;
   inset: 0;
@@ -1748,32 +1756,51 @@ body {
   height: 100%;
 }
 
-/* Chat Topbar with Glass Effect */
+/* Chat Topbar with Glass Effect - Fixed positioning to float over messages */
 .chat-topbar {
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 580px; /* Width of left panel */
+  right: 0;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: none;
   border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
+  z-index: 10;
+  width: calc(100vw - 580px); /* Fix width calculation */
+  box-sizing: border-box;
+  background: transparent;
 }
 
-/* Make sure buttons and content are above glass layers */
+/* Make sure buttons and content are above glass layers with transparent backgrounds */
 .chat-topbar .back-btn,
-.chat-topbar .menu-btn,
+.chat-topbar .menu-btn {
+  position: relative;
+  z-index: 4;
+  background: transparent !important;
+  border: none;
+}
+
 .chat-topbar .chat-info {
   position: relative;
   z-index: 4;
 }
 
-/* Chat Input Area - Transparent background */
+/* Chat Input Area - Fixed positioning to float over messages */
 .chat-input-area {
+  position: fixed;
+  bottom: 0;
+  left: 580px; /* Width of left panel */
+  right: 0;
   padding: 20px;
   background: transparent;
   border-top: none;
+  pointer-events: none; /* Allow clicking through transparent area */
+  z-index: 10;
 }
 
 /* Floating Input Bar with Glass Effect */
@@ -1787,6 +1814,9 @@ body {
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   transition: all 0.3s ease;
+  pointer-events: auto; /* Re-enable pointer events on the input bar itself */
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .floating-input-bar:hover {
@@ -1814,4 +1844,16 @@ body {
 .floating-input-bar .send-fab {
   position: relative;
   z-index: 4;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .chat-input-area {
+    left: 0;
+  }
+  
+  .chat-topbar {
+    left: 0;
+    width: 100vw;
+  }
 }
