@@ -464,13 +464,13 @@ body {
 }
 
 .send-fab {
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: white;
+  background: transparent;
   border: none;
-  color: black;
-  font-size: 20px;
+  color: #b3b3b3;
+  font-size: 28px;
   cursor: pointer;
   display: grid;
   place-items: center;
