@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatOXF Presentation - Mandsaur University</title>
+    <title>ChatOXF Presentation</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
@@ -12,7 +12,7 @@
         :root {
             --bg-color: #050505;
             --card-bg: #121212;
-            --accent: #aaff00; /* Neon Green from your screenshots */
+            --accent: #aaff00; /* Your Neon Green */
             --text-main: #ffffff;
             --text-sec: #a0a0a0;
             --slide-width: 1280px;
@@ -21,7 +21,7 @@
 
         body {
             margin: 0;
-            background-color: #222;
+            background-color: #333;
             font-family: 'Inter', sans-serif;
             display: flex;
             flex-direction: column;
@@ -40,93 +40,97 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            padding: 60px;
+            padding: 40px 60px; /* Reduced vertical padding to stop overlap */
             box-sizing: border-box;
             border: 1px solid #333;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
             page-break-after: always;
         }
 
-        /* Print Settings for PDF */
         @media print {
             body { margin: 0; padding: 0; background: #000; }
-            .slide { border: none; margin: 0; page-break-after: always; }
+            .slide { border: none; margin: 0; box-shadow: none; page-break-after: always; }
         }
 
         /* Typography */
-        h1 { font-size: 56px; margin: 0 0 10px 0; letter-spacing: -1px; }
-        h2 { font-size: 32px; color: var(--accent); margin: 0 0 30px 0; font-weight: 400; }
-        h3 { font-size: 24px; margin-bottom: 15px; border-left: 4px solid var(--accent); padding-left: 15px; }
-        p, li { font-size: 20px; line-height: 1.6; color: var(--text-sec); }
-        ul { padding-left: 20px; }
+        h1 { font-size: 48px; margin: 0 0 5px 0; letter-spacing: -1px; color: #fff; }
+        h2 { font-size: 28px; color: var(--accent); margin: 0 0 20px 0; font-weight: 400; }
+        h3 { font-size: 22px; margin-bottom: 10px; border-left: 4px solid var(--accent); padding-left: 15px; color: #fff; }
+        p, li { font-size: 18px; line-height: 1.5; color: var(--text-sec); }
+        ul { padding-left: 20px; margin-top: 5px; }
 
-        /* Layout Utilities */
-        .row { display: flex; gap: 40px; height: 100%; align-items: center; }
-        .col { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        /* Layouts */
+        .row { display: flex; gap: 40px; height: 100%; align-items: flex-start; margin-top: 10px; }
+        .col { flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
         
-        /* Image Handling */
+        /* Image Frames */
         .img-frame {
             width: 100%;
-            height: 400px;
+            height: 450px; /* Fixed height for consistency */
             border-radius: 12px;
             overflow: hidden;
             border: 2px solid #333;
-            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: #000;
         }
         .img-frame img {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* This crops the image perfectly */
-            object-position: top center;
+            object-fit: contain; /* Changed to CONTAIN so whole screenshot is visible */
+            background-color: #000;
         }
 
         /* Tech Stack Icons */
-        .tech-stack { display: flex; gap: 30px; justify-content: center; margin-top: 40px; }
+        .tech-stack { display: flex; gap: 40px; justify-content: center; margin-top: 40px; }
         .tech-item { text-align: center; }
-        .tech-item i { font-size: 48px; color: var(--text-main); margin-bottom: 10px; }
-        .tech-item span { display: block; font-size: 14px; color: var(--accent); }
+        .tech-item i { font-size: 50px; color: #fff; margin-bottom: 15px; }
+        .tech-item span { display: block; font-size: 16px; color: var(--accent); }
 
-        /* Footer */
+        /* Specific Component Styles */
+        .highlight-box {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+            margin-bottom: 15px;
+        }
+
         .footer {
             position: absolute;
-            bottom: 30px;
+            bottom: 20px;
             left: 60px;
             right: 60px;
             border-top: 1px solid #333;
-            padding-top: 20px;
+            padding-top: 15px;
             display: flex;
             justify-content: space-between;
             font-size: 14px;
             color: #555;
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
-        /* Specific Styling */
-        .highlight-box {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 3px solid var(--accent);
-            margin-bottom: 20px;
+        /* Flowchart Override */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
 
-    <div class="slide">
-        <div class="col" style="align-items: center; text-align: center;">
-            <div style="font-size: 20px; color: var(--accent); letter-spacing: 3px; margin-bottom: 20px;">PROJECT PRESENTATION</div>
-            <h1 style="font-size: 80px;">ChatOXF</h1>
-            <p style="font-size: 28px; color: #fff;">Real-Time Smart Communication Platform</p>
-            
-            <div style="margin-top: 60px; text-align: left; display: inline-block;">
-                <div style="margin-bottom: 10px;"><strong style="color: #fff;">Kavy Porwal</strong> &bull; Lead Developer</div>
-                <div style="margin-bottom: 10px;"><strong style="color: #fff;">Chetanya Parmar</strong> &bull; Planning & Testing</div>
-                <div><strong style="color: #fff;">Arbaz Khan</strong> &bull; UI/UX & Docs</div>
-            </div>
+    <div class="slide" style="justify-content: center; text-align: center;">
+        <div style="font-size: 18px; color: var(--accent); letter-spacing: 4px; margin-bottom: 20px;">PROJECT PRESENTATION</div>
+        <h1 style="font-size: 90px; line-height: 1;">ChatOXF</h1>
+        <p style="font-size: 32px; color: #fff; margin-top: 10px;">Real-Time Smart Communication Platform</p>
+        
+        <div style="margin-top: 60px; display: inline-block; text-align: left; background: #111; padding: 30px; border-radius: 10px; border: 1px solid #333;">
+            <div style="margin-bottom: 12px; font-size: 22px;"><strong style="color: #fff;">Kavy Porwal</strong> <span style="color:#555;"> // Lead Developer</span></div>
+            <div style="margin-bottom: 12px; font-size: 22px;"><strong style="color: #fff;">Chetanya Parmar</strong> <span style="color:#555;"> // Planning & Testing</span></div>
+            <div style="font-size: 22px;"><strong style="color: #fff;">Arbaz Khan</strong> <span style="color:#555;"> // UI/UX & Docs</span></div>
         </div>
+        
         <div class="footer">
             <span>Assignment - II</span>
             <span>Mandsaur University</span>
@@ -138,11 +142,11 @@
         <h1>Introduction</h1>
         <h2>Overview & Vision</h2>
         <div class="row">
-            <div class="col">
+            <div class="col" style="flex: 0.8;">
                 <p>ChatOXF is a next-generation messaging platform designed to bridge the gap between static web pages and fully reactive applications.</p>
                 <div class="highlight-box">
-                    <strong>Core Philosophy:</strong>
-                    <p style="margin:5px 0 0 0; font-size: 18px;">Fast, Private, and Intelligent.</p>
+                    <strong style="color: #fff; font-size: 20px;">Core Philosophy</strong>
+                    <p style="margin:5px 0 0 0;">Fast, Private, and Intelligent communication.</p>
                 </div>
                 <ul>
                     <li>Seamless real-time messaging.</li>
@@ -150,9 +154,9 @@
                     <li>Modern, Dark-Mode aesthetics.</li>
                 </ul>
             </div>
-            <div class="col">
+            <div class="col" style="flex: 1.2;">
                 <div class="img-frame">
-                    <img src="1000062028.png" alt="ChatOXF Landing Page">
+                    <img src="1000062028.png" alt="Landing Page">
                 </div>
             </div>
         </div>
@@ -162,26 +166,22 @@
     <div class="slide">
         <h1>Why ChatOXF?</h1>
         <h2>Relevance in Computer Science</h2>
-        <div class="grid-2" style="margin-top: 40px;">
+        <div class="grid-2" style="margin-top: 30px;">
             <div class="highlight-box">
-                <i class="fas fa-bolt" style="color: var(--accent); font-size: 24px;"></i>
-                <strong style="color:#fff; display:block; margin: 10px 0;">Low Latency</strong>
-                <p style="font-size:16px;">Uses WebSocket-based subscription models instead of traditional polling.</p>
+                <strong style="color: var(--accent); font-size: 20px;">Low Latency</strong>
+                <p>Uses WebSocket-based subscriptions instead of polling, ensuring instant data delivery.</p>
             </div>
             <div class="highlight-box">
-                <i class="fas fa-shield-alt" style="color: var(--accent); font-size: 24px;"></i>
-                <strong style="color:#fff; display:block; margin: 10px 0;">Data Sovereignty</strong>
-                <p style="font-size:16px;">Hosted on Indian servers to ensure better speed and data privacy.</p>
+                <strong style="color: var(--accent); font-size: 20px;">Data Sovereignty</strong>
+                <p>Hosted on Indian servers to ensure compliance, better speed, and data privacy.</p>
             </div>
             <div class="highlight-box">
-                <i class="fas fa-brain" style="color: var(--accent); font-size: 24px;"></i>
-                <strong style="color:#fff; display:block; margin: 10px 0;">AI Integration</strong>
-                <p style="font-size:16px;">Demonstrates practical implementation of LLMs in web apps.</p>
+                <strong style="color: var(--accent); font-size: 20px;">AI Integration</strong>
+                <p>Practical implementation of LLMs (a4f doc) to assist users directly in chat.</p>
             </div>
             <div class="highlight-box">
-                <i class="fas fa-mobile-alt" style="color: var(--accent); font-size: 24px;"></i>
-                <strong style="color:#fff; display:block; margin: 10px 0;">Cross Platform</strong>
-                <p style="font-size:16px;">Available as a PWA and a dedicated Android Application.</p>
+                <strong style="color: var(--accent); font-size: 20px;">Cross Platform</strong>
+                <p>Available as a responsive Web App and a dedicated Android Application.</p>
             </div>
         </div>
         <div class="footer"><span>03 / 10</span><span>Relevance</span></div>
@@ -190,23 +190,25 @@
     <div class="slide">
         <h1>System Architecture</h1>
         <h2>Data Flow & Logic</h2>
-        <div class="row" style="justify-content: center;">
-            <div class="mermaid" style="transform: scale(1.3);">
-                graph LR
-                    A[User Client] -- "Inputs/Events" --> B(Frontend GSAP/JS)
-                    B -- "Sync Data" --> C{Convex Backend}
-                    C -- "Store" --> D[(Real-time DB)]
-                    C -- "Notify" --> A
-                    C -- "OTP Request" --> E[SMTP Server]
-                    B -- "Query" --> F[AI Model API]
-                    F -- "Response" --> B
-                    style A fill:#fff,stroke:#333,stroke-width:2px,color:#000
-                    style C fill:#aaff00,stroke:#333,stroke-width:2px,color:#000
-                    style D fill:#333,stroke:#aaff00,stroke-width:2px,color:#fff
-                    style F fill:#222,stroke:#fff,stroke-width:1px
-            </div>
+        
+        <div class="mermaid">
+            %%{init: {'theme': 'dark', 'themeVariables': { 'fontSize': '28px', 'fontFamily': 'Inter' }}}%%
+            graph LR
+                A[User Client] ==> B(Frontend GSAP/JS)
+                B -- "Sync Data" --> C{Convex Backend}
+                C == "Store" ==> D[(Real-time DB)]
+                C -. "Notify" .-> A
+                C -- "OTP" --> E[SMTP Server]
+                B -- "Prompt" --> F[AI Model API]
+                F -- "Reply" --> B
+                
+                style A fill:#fff,stroke:#333,color:#000,stroke-width:2px
+                style C fill:#aaff00,stroke:#333,color:#000,stroke-width:4px
+                style D fill:#333,stroke:#aaff00,color:#fff,stroke-width:2px
+                style F fill:#222,stroke:#fff,stroke-width:2px
         </div>
-        <p style="text-align: center; margin-top: 40px;">
+
+        <p style="text-align: center; margin-top: 30px; font-size: 20px;">
             A serverless architecture where the frontend subscribes directly to database changes.
         </p>
         <div class="footer"><span>04 / 10</span><span>Key Concepts</span></div>
@@ -218,25 +220,21 @@
         
         <div class="row">
             <div class="col">
-                <h3>Frontend</h3>
-                <ul>
-                    <li><strong>HTML5 / CSS3:</strong> Structure & Styling</li>
-                    <li><strong>JavaScript (ES6+):</strong> Core Logic</li>
-                    <li><strong>GSAP:</strong> High-performance animations</li>
-                </ul>
-
-                <h3>Backend</h3>
-                <ul>
-                    <li><strong>Convex:</strong> Real-time Database & Functions</li>
-                    <li><strong>SMTP:</strong> OTP Mail Services</li>
-                </ul>
+                <div class="highlight-box">
+                    <h3 style="border:none; margin:0; padding:0; color: var(--accent);">Frontend</h3>
+                    <p style="margin-top:5px;">HTML5, CSS3, JavaScript (ES6+), GSAP for Animations.</p>
+                </div>
+                <div class="highlight-box">
+                    <h3 style="border:none; margin:0; padding:0; color: var(--accent);">Backend</h3>
+                    <p style="margin-top:5px;">Convex (Real-time DB & Functions), SMTP (Email).</p>
+                </div>
             </div>
             <div class="col">
                 <div class="tech-stack" style="flex-wrap: wrap;">
                     <div class="tech-item"><i class="fab fa-html5"></i><span>HTML5</span></div>
                     <div class="tech-item"><i class="fab fa-css3-alt"></i><span>CSS3</span></div>
                     <div class="tech-item"><i class="fab fa-js"></i><span>JavaScript</span></div>
-                    <div class="tech-item"><i class="fas fa-database"></i><span>Convex</span></div>
+                    <div class="tech-item"><i class="fas fa-server"></i><span>Convex</span></div>
                     <div class="tech-item"><i class="fab fa-android"></i><span>Android</span></div>
                 </div>
             </div>
@@ -248,23 +246,19 @@
         <h1>Applications</h1>
         <h2>Real-World Usage</h2>
         <div class="row">
-            <div class="col">
-                <div class="highlight-box">
-                    <strong style="color:#fff;">1. Smart Personal Chat</strong>
-                    <p style="font-size: 16px; margin-top: 5px;">A clutter-free environment for private conversations.</p>
+            <div class="col" style="flex: 0.8;">
+                <div style="margin-bottom: 25px;">
+                    <strong style="color: #fff; font-size: 20px;">1. Productivity Assistant</strong>
+                    <p style="margin: 5px 0 0 0;">Integrated AI helps draft messages or answer queries instantly within the chat interface.</p>
                 </div>
-                <div class="highlight-box">
-                    <strong style="color:#fff;">2. Productivity Assistant</strong>
-                    <p style="font-size: 16px; margin-top: 5px;">Integrated AI helps draft messages or answer queries instantly.</p>
-                </div>
-                <div class="highlight-box">
-                    <strong style="color:#fff;">3. Secure Org Comm</strong>
-                    <p style="font-size: 16px; margin-top: 5px;">OTP-locked accounts make it suitable for internal team chats.</p>
+                <div style="margin-bottom: 25px;">
+                    <strong style="color: #fff; font-size: 20px;">2. Secure Org Comm</strong>
+                    <p style="margin: 5px 0 0 0;">OTP-locked accounts make it suitable for secure internal team communication.</p>
                 </div>
             </div>
-            <div class="col">
+            <div class="col" style="flex: 1.2;">
                 <div class="img-frame">
-                    <img src="1000062034.png" alt="ChatOXF AI Chat Interface">
+                    <img src="1000062034.png" alt="AI Chat Interface">
                 </div>
             </div>
         </div>
@@ -273,52 +267,50 @@
 
     <div class="slide">
         <h1>Advantages</h1>
-        <h2>Key Strengths of ChatOXF</h2>
+        <h2>Key Strengths</h2>
         <div class="row">
-            <div class="col">
-                <div class="img-frame" style="height: 500px;">
+            <div class="col" style="flex: 1.2;">
+                <div class="img-frame">
                     <img src="1000062035.png" alt="Profile Settings">
                 </div>
             </div>
-            <div class="col">
-                <ul>
-                    <li style="margin-bottom: 20px;">
-                        <strong style="color:#fff;">Full Customization:</strong> <br>
-                        Users can upload PFPs, set Bios, and manage profiles (as seen in image).
-                    </li>
-                    <li style="margin-bottom: 20px;">
-                        <strong style="color:#fff;">Interaction Rich:</strong> <br>
-                        Supports Reactions, Slide-to-Reply, and Copy/Delete actions.
-                    </li>
-                    <li style="margin-bottom: 20px;">
-                        <strong style="color:#fff;">Reactive UI:</strong> <br>
-                        Messages sync instantly without page reloads.
-                    </li>
-                </ul>
+            <div class="col" style="flex: 0.8; padding-left: 20px;">
+                <div class="highlight-box">
+                    <strong style="color: #fff;">Full Customization</strong>
+                    <p style="margin: 5px 0 0 0;">Users can upload PFPs, set Bios, and manage profiles.</p>
+                </div>
+                <div class="highlight-box">
+                    <strong style="color: #fff;">Interaction Rich</strong>
+                    <p style="margin: 5px 0 0 0;">Supports Reactions, Slide-to-Reply, and Copy/Delete.</p>
+                </div>
+                <div class="highlight-box">
+                    <strong style="color: #fff;">Reactive UI</strong>
+                    <p style="margin: 5px 0 0 0;">Messages sync instantly without page reloads.</p>
+                </div>
             </div>
         </div>
         <div class="footer"><span>07 / 10</span><span>Advantages</span></div>
     </div>
 
     <div class="slide">
-        <h1>Limitations & Challenges</h1>
-        <h2>Current Constraints</h2>
-        <div class="grid-2" style="margin-top: 50px;">
-            <div style="background: #1a1a1a; padding: 30px; border-top: 4px solid #ff4444;">
-                <h3 style="border: none; padding: 0; color: #ff4444;">Scalability Costs</h3>
-                <p>While the free tier supports university projects, scaling to thousands of users requires paid Convex plans (approx. ₹1,200/mo).</p>
+        <h1>Limitations</h1>
+        <h2>Challenges & Constraints</h2>
+        <div class="grid-2" style="margin-top: 40px;">
+            <div style="background: #1a1a1a; padding: 25px; border-top: 4px solid #ff4444;">
+                <h3 style="border: none; padding: 0; color: #ff4444; margin-bottom: 10px;">Scalability Costs</h3>
+                <p style="font-size: 16px;">Scaling to thousands of users requires paid Convex plans (approx. ₹1,200/mo).</p>
             </div>
-            <div style="background: #1a1a1a; padding: 30px; border-top: 4px solid #ff4444;">
-                <h3 style="border: none; padding: 0; color: #ff4444;">Media Support</h3>
-                <p>Currently supports text and emojis. Video/Voice calling and heavy file sharing are yet to be implemented.</p>
+            <div style="background: #1a1a1a; padding: 25px; border-top: 4px solid #ff4444;">
+                <h3 style="border: none; padding: 0; color: #ff4444; margin-bottom: 10px;">Media Support</h3>
+                <p style="font-size: 16px;">Currently limited to text/emojis. Video/Voice calling and file sharing are in development.</p>
             </div>
-            <div style="background: #1a1a1a; padding: 30px; border-top: 4px solid #ff4444;">
-                <h3 style="border: none; padding: 0; color: #ff4444;">Native Performance</h3>
-                <p>The Android app relies on WebView technology, which is slightly less performant than Kotlin-native code.</p>
+            <div style="background: #1a1a1a; padding: 25px; border-top: 4px solid #ff4444;">
+                <h3 style="border: none; padding: 0; color: #ff4444; margin-bottom: 10px;">Native Performance</h3>
+                <p style="font-size: 16px;">Android app uses WebView, which is less performant than a native Kotlin implementation.</p>
             </div>
-            <div style="background: #1a1a1a; padding: 30px; border-top: 4px solid #ff4444;">
-                <h3 style="border: none; padding: 0; color: #ff4444;">Encryption</h3>
-                <p>Messages are secure in transit (HTTPS), but full End-to-End Encryption (E2EE) is in the R&D phase.</p>
+            <div style="background: #1a1a1a; padding: 25px; border-top: 4px solid #ff4444;">
+                <h3 style="border: none; padding: 0; color: #ff4444; margin-bottom: 10px;">Encryption</h3>
+                <p style="font-size: 16px;">Messages are secure in transit (HTTPS), but full End-to-End Encryption (E2EE) is pending.</p>
             </div>
         </div>
         <div class="footer"><span>08 / 10</span><span>Limitations</span></div>
@@ -328,54 +320,50 @@
         <h1>Future Scope</h1>
         <h2>Development Roadmap</h2>
         
-        <div style="margin-top: 50px; position: relative;">
-            <div style="position: absolute; left: 20px; top: 0; bottom: 0; width: 4px; background: #333;"></div>
+        <div style="margin-top: 40px; position: relative; padding-left: 20px;">
+            <div style="position: absolute; left: 40px; top: 0; bottom: 0; width: 4px; background: #333;"></div>
             
-            <div style="margin-left: 50px; margin-bottom: 40px;">
+            <div style="margin-left: 60px; margin-bottom: 30px;">
                 <strong style="color: var(--accent); font-size: 24px;">Phase 1: Media Suite</strong>
                 <p>Implementation of WebRTC for Voice and Video calling features.</p>
             </div>
 
-            <div style="margin-left: 50px; margin-bottom: 40px;">
+            <div style="margin-left: 60px; margin-bottom: 30px;">
                 <strong style="color: var(--accent); font-size: 24px;">Phase 2: Advanced AI</strong>
                 <p>Upgrading the AI assistant to handle image generation and chat summarization.</p>
             </div>
 
-            <div style="margin-left: 50px;">
+            <div style="margin-left: 60px;">
                 <strong style="color: var(--accent); font-size: 24px;">Phase 3: Native Ecosystem</strong>
-                <p>Rebuilding the mobile application using React Native or Kotlin for native performance.</p>
+                <p>Rebuilding mobile apps using Kotlin/Swift for native performance.</p>
             </div>
         </div>
         <div class="footer"><span>09 / 10</span><span>Future Trends</span></div>
     </div>
 
-    <div class="slide">
-        <div class="col" style="align-items: center; text-align: center;">
-            <i class="fas fa-check-circle" style="font-size: 80px; color: var(--accent); margin-bottom: 30px;"></i>
-            <h1>Conclusion</h1>
-            <p style="max-width: 800px; margin: 0 auto 40px auto; color: #fff;">
-                ChatOXF successfully demonstrates the power of serverless architecture and modern UI libraries. It provides a secure, fast, and intelligent communication platform ready for the Indian market.
-            </p>
+    <div class="slide" style="justify-content: center; align-items: center; text-align: center;">
+        <i class="fas fa-check-circle" style="font-size: 70px; color: var(--accent); margin-bottom: 30px;"></i>
+        <h1>Conclusion</h1>
+        <p style="max-width: 900px; margin: 0 auto 50px auto; color: #fff; font-size: 26px;">
+            ChatOXF successfully demonstrates the power of serverless architecture. It provides a secure, fast, and intelligent communication platform ready for the Indian market.
+        </p>
 
-            <div style="display: flex; gap: 20px;">
-                <div class="highlight-box" style="border: 1px solid #333; width: 300px;">
-                    <i class="fab fa-github" style="font-size: 30px; color: #fff;"></i>
-                    <p style="font-size: 16px; margin: 10px 0 0 0;">github.com/iamkavy47/chatoxf</p>
-                </div>
-                <div class="highlight-box" style="border: 1px solid #333; width: 300px;">
-                    <i class="fas fa-globe" style="font-size: 30px; color: #fff;"></i>
-                    <p style="font-size: 16px; margin: 10px 0 0 0;">chatoxf.vercel.app</p>
-                </div>
+        <div style="display: flex; gap: 40px;">
+            <div style="text-align: left;">
+                <i class="fab fa-github" style="color: var(--accent); margin-right: 10px;"></i>
+                <span style="color: #fff; font-size: 20px;">github.com/iamkavy47/chatoxf</span>
             </div>
-            
-            <h3 style="margin-top: 50px; border: none; font-size: 16px; color: #666;">References: Mandsaur University Assignment Guidelines & ChatOXF Project Report</h3>
+            <div style="text-align: left;">
+                <i class="fas fa-globe" style="color: var(--accent); margin-right: 10px;"></i>
+                <span style="color: #fff; font-size: 20px;">chatoxf.vercel.app</span>
+            </div>
         </div>
+        
         <div class="footer"><span>10 / 10</span><span>Thank You</span></div>
     </div>
 
     <script>
-        // Initialize Mermaid Flowcharts
-        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+        mermaid.initialize({ startOnLoad: true });
     </script>
 </body>
 </html>
