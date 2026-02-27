@@ -9,10 +9,10 @@ export const callAI = action({
     text: v.string(),
   },
   handler: async (_, { text }) => {
-    const apiKey = process.env.GOOGLE_API_KEY;
+    const apiKey = "AIzaSyA_jKC04FzGvVF-qFBtjBHNbJISWuxNbsU";
 
     if (!apiKey) {
-      throw new Error("Missing GOOGLE_API_KEY environment variable. Set it in your Convex dashboard.");
+      throw new Error("Missing GOOGLE_API_KEY");
     }
 
     const ai = new GoogleGenAI({ apiKey });
