@@ -62,7 +62,7 @@ RULES:
         Authorization: `Bearer ${A4F_KEY}`,
       },
       body: JSON.stringify({
-        model: "provider-5/gpt-4o-mini",
+        model: "provider-6/gpt-oss-20b",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: text },
