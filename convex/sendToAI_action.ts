@@ -9,10 +9,10 @@ export const callAI = action({
     text: v.string(),
   },
   handler: async (_, { text }) => {
-    const apiKey = "AIzaSyA_jKC04FzGvVF-qFBtjBHNbJISWuxNbsU";
+    const apiKey = process.env.GOOGLE_API_KEY;
 
     if (!apiKey) {
-      throw new Error("Missing GOOGLE_API_KEY environment variable");
+      throw new Error("Missing GOOGLE_API_KEY environment variable. Set it in your Convex dashboard.");
     }
 
     const ai = new GoogleGenAI({ apiKey });
@@ -62,7 +62,7 @@ RULES:
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       config: {
         systemInstruction: systemPrompt,
         temperature: 0.7,
