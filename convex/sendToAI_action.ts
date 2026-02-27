@@ -2,7 +2,7 @@
 
 import { action } from "./_generated/server";
 import { v } from "convex/values";
-import fetch from "node-fetch";
+import OpenAI from "openai";
 
 export const callAI = action({
   args: {
@@ -10,6 +10,15 @@ export const callAI = action({
   },
   handler: async (_, { text }) => {
     const A4F_KEY = "ddc-a4f-af56861e964e43debe8a499a8e41b578";
+
+    if (!A4F_KEY) {
+      throw new Error("Missing A4F_API_KEY environment variable");
+    }
+
+    const client = new OpenAI({
+      apiKey: A4F_KEY,
+      baseURL: "https://api.a4f.co/v1",
+    });
 
     const systemPrompt = `
 You are ChatOXF AI — the built-in intelligent assistant of the ChatOXF app.  
@@ -55,27 +64,17 @@ RULES:
 - Always guide users like ChatOXF’s official helper
     `;
 
-    const res = await fetch("https://api.a4f.co/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${A4F_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "provider-6/compound-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: text },
-        ],
-      }),
+    const response = await client.chat.completions.create({
+      model: "provider-5/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: text },
+      ],
+      temperature: 0.7,
+      max_tokens: 200,
+      stream: false,
     });
 
-    const json: any = await res.json();
-
-    return (
-      json?.choices?.[0]?.message?.content ||
-      json?.choices?.[0]?.text ||
-      "AI unavailable."
-    );
+    return response.choices?.[0]?.message?.content || "AI unavailable.";
   },
 });
