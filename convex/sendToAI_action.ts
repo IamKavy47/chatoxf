@@ -12,7 +12,7 @@ export const callAI = action({
     const apiKey = "AIzaSyA_jKC04FzGvVF-qFBtjBHNbJISWuxNbsU";
 
     if (!apiKey) {
-      throw new Error("Missing GOOGLE_API_KEY environment variable");
+      throw new Error("Missing GOOGLE_API_KEY");
     }
 
     const ai = new GoogleGenAI({ apiKey });
@@ -62,7 +62,7 @@ RULES:
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       config: {
         systemInstruction: systemPrompt,
         temperature: 0.7,
