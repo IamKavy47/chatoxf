@@ -62,7 +62,7 @@ RULES:
         Authorization: `Bearer ${A4F_KEY}`,
       },
       body: JSON.stringify({
-        model: "provider-5/gemini-2.5-flash",
+        model: "provider-6/compound-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: text },
